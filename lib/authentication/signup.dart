@@ -85,12 +85,22 @@ class _SignupScreenState extends State<SignupScreen> {
                   fillColor: Colors.white,
                 ),
                 const SizedBox(height: 12),
-                // Phone number (consistent InputField styling)
+                // Phone number with +91 prefix
                 InputField(
                   hint: 'Phone number',
                   controller: phoneCtrl,
                   keyboardType: TextInputType.phone,
                   fillColor: Colors.white,
+                  prefix: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      '+91',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 18),
 
@@ -144,13 +154,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             }
                             setState(() => _emailLoading = true);
                             try {
+                              final rawPhone = phoneCtrl.text.trim();
+                              final normalizedPhone = rawPhone.startsWith('+')
+                                  ? rawPhone
+                                  : '+91 ${rawPhone}';
                               await AuthService.instance.signUpWithEmail(
                                 email: emailCtrl.text.trim(),
                                 password: passCtrl.text,
                                 role: 'shop',
                                 extra: {
                                   'name': nameCtrl.text.trim(),
-                                  'phone': phoneCtrl.text.trim(),
+                                  'phone': normalizedPhone,
                                 },
                               );
                               if (!mounted) return;

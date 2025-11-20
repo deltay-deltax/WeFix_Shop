@@ -132,7 +132,6 @@ class AuthService {
         'progress': {
           'terms_done': false,
           'privacy_done': false,
-          'consent_done': false,
           'registration_done': false,
         },
         ...?extra,

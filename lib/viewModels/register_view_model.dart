@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import '../core/services/auth_service.dart';
+import '../core/constants/app_routes.dart';
 import '../authentication/enter_otp_screen.dart';
 
 // UI-only lightweight RegisterViewModel to let screens render without backend
@@ -182,6 +183,13 @@ class RegisterViewModel extends ChangeNotifier {
           .doc(uid)
           .set(payload, SetOptions(merge: true));
       await AuthService.instance.updateProgress({'registration_done': true});
+      if (context.mounted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.home,
+          (route) => false,
+        );
+      }
     } catch (e) {
       error = e.toString();
     } finally {

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'core/constants/app_colors.dart';
-import 'core/constants/app_routes.dart';
 import 'routes/app_router.dart';
+import 'authentication/login.dart' as auth_login;
+import 'views/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -92,8 +94,30 @@ class MyApp extends StatelessWidget {
           unselectedLabelStyle: TextStyle(fontSize: 12),
         ),
       ),
-      initialRoute: AppRoutes.home,
       onGenerateRoute: AppRouter.generate,
+      home: const _AuthGate(),
+    );
+  }
+}
+
+class _AuthGate extends StatelessWidget {
+  const _AuthGate({super.key});
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        final user = snapshot.data;
+        if (user == null) {
+          return const auth_login.LoginScreen();
+        }
+        return HomeScreen();
+      },
     );
   }
 }

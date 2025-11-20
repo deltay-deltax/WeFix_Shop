@@ -17,59 +17,94 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Welcome back, ServicePro Inc.'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications),
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.notifications);
-            },
-          ),
-        ],
-      ),
-      body: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                DashboardGrid(viewModel: viewModel),
-                const SizedBox(height: 24),
-                Text(
-                  'Recent Actions',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                RecentActionsList(viewModel: viewModel),
-              ],
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+        } else {
+          Navigator.of(
+            context,
+          ).pushNamedAndRemoveUntil(AppRoutes.login, (route) => false);
+        }
+      });
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    return FutureBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      future: FirebaseFirestore.instance
+          .collection('shop_users')
+          .doc(user.uid)
+          .get(),
+      builder: (context, snap) {
+        final data = snap.data?.data();
+        final progress = Map<String, dynamic>.from(data?['progress'] ?? {});
+        final terms = progress['terms_done'] == true;
+        final privacy = progress['privacy_done'] == true;
+        final reg = progress['registration_done'] == true;
+
+        // Hide all content and bottom nav if onboarding incomplete
+        final incomplete = !(terms && privacy && reg);
+        final company = (data?['companyLegalName'] ?? data?['company'] ?? '')
+            .toString();
+
+        return Scaffold(
+          appBar: AppBar(
+            title: Text(
+              company.isNotEmpty ? 'Welcome back, $company' : 'Welcome back',
             ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.notifications);
+                },
+              ),
+            ],
           ),
-          _OnboardingResumeOverlay(),
-        ],
-      ),
-      bottomNavigationBar: BottomNavWidget(
-        currentIndex: 0,
-        onTap: (int idx) {
-          switch (idx) {
-            case 0:
-              // already on home
-              break;
-            case 1:
-              Navigator.pushNamed(context, AppRoutes.chat);
-              break;
-            case 2:
-              Navigator.pushNamed(context, AppRoutes.profile);
-              break;
-          }
-        },
-      ),
+          body: incomplete
+              ? const _OnboardingGate()
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      DashboardGrid(viewModel: viewModel),
+                      const SizedBox(height: 24),
+                      Text(
+                        'Recent Actions',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      RecentActionsList(viewModel: viewModel),
+                    ],
+                  ),
+                ),
+          bottomNavigationBar: incomplete
+              ? null
+              : BottomNavWidget(
+                  currentIndex: 0,
+                  onTap: (int idx) {
+                    switch (idx) {
+                      case 0:
+                        break;
+                      case 1:
+                        Navigator.pushNamed(context, AppRoutes.chat);
+                        break;
+                      case 2:
+                        Navigator.pushNamed(context, AppRoutes.profile);
+                        break;
+                    }
+                  },
+                ),
+        );
+      },
     );
   }
 }
 
-class _OnboardingResumeOverlay extends StatelessWidget {
+class _OnboardingGate extends StatelessWidget {
+  const _OnboardingGate({super.key});
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -80,29 +115,30 @@ class _OnboardingResumeOverlay extends StatelessWidget {
           .doc(user.uid)
           .get(),
       builder: (context, snap) {
-        if (!snap.hasData || !snap.data!.exists) return const SizedBox.shrink();
-        final data = snap.data!.data();
-        final progress = Map<String, dynamic>.from(data?['progress'] ?? {});
-        final terms = progress['terms_done'] == true;
-        final privacy = progress['privacy_done'] == true;
-        final consent = progress['consent_done'] == true;
-        final reg = progress['registration_done'] == true;
-        if (terms && privacy && consent && reg) return const SizedBox.shrink();
-
         String title = 'Continue onboarding';
         Widget? next;
-        if (!terms) {
+        if (snap.hasData && snap.data!.exists) {
+          final data = snap.data!.data();
+          final progress = Map<String, dynamic>.from(data?['progress'] ?? {});
+          final terms = progress['terms_done'] == true;
+          final privacy = progress['privacy_done'] == true;
+          final reg = progress['registration_done'] == true;
+          if (terms && privacy && reg) return const SizedBox.shrink();
+
+          if (!terms) {
+            title = 'Please review Terms';
+            next = const TermsAndUse1Screen();
+          } else if (!privacy) {
+            title = 'Please review Privacy Policy';
+            next = const PrivacyAndPolicy();
+          } else if (!reg) {
+            title = 'Finish shop registration';
+            next = RegisterNewShopScreen();
+          }
+        } else {
+          // Fallback: start from Terms if user doc missing/not loaded
           title = 'Please review Terms';
           next = const TermsAndUse1Screen();
-        } else if (!privacy) {
-          title = 'Please review Privacy Policy';
-          next = const PrivacyAndPolicy();
-        } else if (!consent) {
-          title = 'Please provide consent';
-          next = const TermsAndUse1Screen(returnToDashboard: true);
-        } else if (!reg) {
-          title = 'Finish shop registration';
-          next = RegisterNewShopScreen();
         }
 
         return Align(

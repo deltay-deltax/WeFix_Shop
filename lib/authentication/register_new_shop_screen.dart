@@ -27,8 +27,6 @@ class RegisterNewShopScreen extends StatelessWidget {
                 create: (_) => RegisterViewModel(),
                 child: Consumer<RegisterViewModel>(
                   builder: (context, vm, _) {
-                    // Attempt to prefill email/phone once
-                    vm.prefillFromAuthAndDb();
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

@@ -1,5 +1,7 @@
 // add_service_screen.dart
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wefix_shop/viewModels/add_service_view_model.dart';
 
 class AddServiceScreen extends StatefulWidget {
@@ -139,9 +141,41 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                     "Save Service",
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      // Save logic, pop or show success
+                  onPressed: () async {
+                    if (!_formKey.currentState!.validate()) return;
+                    try {
+                      final user = FirebaseAuth.instance.currentUser;
+                      if (user == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please login to continue'),
+                          ),
+                        );
+                        return;
+                      }
+                      final service = widget.viewModel.service;
+                      final ref = FirebaseFirestore.instance
+                          .collection('shop_users')
+                          .doc(user.uid)
+                          .collection('services');
+                      await ref.add({
+                        'name': service.name,
+                        'description': service.description,
+                        'category': service.category,
+                        'pricingType': service.pricingType,
+                        'amount': service.amount,
+                        'createdAt': FieldValue.serverTimestamp(),
+                        'updatedAt': FieldValue.serverTimestamp(),
+                      });
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Service saved')),
+                      );
+                      Navigator.pop(context);
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Failed to save: $e')),
+                      );
                     }
                   },
                 ),
