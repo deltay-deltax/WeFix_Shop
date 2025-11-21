@@ -5,10 +5,12 @@ class AppColors {
   static const Color primary = Color(
     0xFF156EF5,
   ); // Main blue (buttons, FAB, highlights)
+  // Secondary accent (requested)
+  static const Color primary2 = Color(0xFFFF5B38);
   static const Color background = Color(0xFFF8F9FC); // Very light background
   static const Color card = Color(0xFFFFFFFF); // Card white
   static const Color border = Color(0xFFE5E6E9); // Card, container borders
-
+  static const Color bar = Color.fromARGB(255, 40, 40, 40);
   static const Color icon = Color(0xFF202337); // Icon/text dark
   static const Color secondaryText = Color(0xFF737A96); // Subtext gray
 

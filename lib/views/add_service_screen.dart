@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wefix_shop/viewModels/add_service_view_model.dart';
+import 'add_service_list_screen.dart';
 
 class AddServiceScreen extends StatefulWidget {
   final AddServiceViewModel viewModel = AddServiceViewModel();
@@ -35,6 +36,19 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const AddServiceListScreen()),
+              );
+            },
+            child: const Text(
+              'Added services',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(20),

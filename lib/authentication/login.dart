@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:wefix_shop/authentication/forgot_password.dart';
 import '../core/services/auth_service.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 // REMOVE google_sign_in import, it's not needed here
@@ -86,7 +87,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: GestureDetector(
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ForgotPasswordScreen(),
+                        ),
+                      );
+                    },
                     child: Text(
                       "Forgot your password?",
                       style: TextStyle(

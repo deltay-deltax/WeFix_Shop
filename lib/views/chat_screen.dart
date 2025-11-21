@@ -4,6 +4,7 @@ import '../viewModels/chat_viewmodel.dart';
 import '../widgets/message_bubble.dart';
 import '../core/constants/app_routes.dart';
 import '../widgets/BottomNavWidget.dart';
+import 'service_requesr-t_screen.dart';
 
 class ChatScreen extends StatelessWidget {
   @override
@@ -17,7 +18,7 @@ class ChatScreen extends StatelessWidget {
             backgroundColor: Colors.white,
             leading: IconButton(
               icon: Icon(Icons.arrow_back, color: Colors.black),
-              onPressed: () {},
+              onPressed: () => Navigator.of(context).maybePop(),
             ),
             title: Row(
               children: [
@@ -64,64 +65,90 @@ class ChatScreen extends StatelessWidget {
               ),
               Expanded(
                 child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   itemCount: vm.messages.length,
                   reverse: false,
                   itemBuilder: (context, i) =>
                       MessageBubble(message: vm.messages[i]),
                 ),
               ),
-              // Hardcoded Message Input Bar
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                color: Colors.white,
-                child: Row(
-                  children: [
-                    Icon(Icons.add_circle_outline, color: Colors.grey[600]),
-                    SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        decoration: InputDecoration(
-                          hintText: "Type your message...",
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          filled: true,
-                          fillColor: Colors.grey[200],
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 0,
+              // Message Input Bar
+              SafeArea(
+                top: false,
+                child: Container(
+                  padding: const EdgeInsets.fromLTRB(12, 6, 12, 10),
+                  color: Colors.white,
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.emoji_emotions_outlined),
+                        color: Colors.grey[700],
+                      ),
+                      Expanded(
+                        child: TextField(
+                          minLines: 1,
+                          maxLines: 4,
+                          decoration: InputDecoration(
+                            hintText: "Type your message",
+                            filled: true,
+                            fillColor: Colors.grey[200],
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(28),
+                              borderSide: BorderSide.none,
+                            ),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(width: 8),
-                    Material(
-                      color: Color(0xFF4285F4),
-                      shape: CircleBorder(),
-                      child: IconButton(
-                        icon: Icon(Icons.send, color: Colors.white),
+                      const SizedBox(width: 8),
+                      IconButton(
                         onPressed: () {},
-                        splashRadius: 24,
+                        icon: const Icon(Icons.attach_file),
+                        color: Colors.grey[700],
                       ),
-                    ),
-                  ],
+                      IconButton(
+                        onPressed: () {},
+                        icon: const Icon(Icons.photo_camera_outlined),
+                        color: Colors.grey[700],
+                      ),
+                      const SizedBox(width: 2),
+                      Material(
+                        color: const Color(0xFF4285F4),
+                        shape: const CircleBorder(),
+                        child: IconButton(
+                          icon: const Icon(Icons.send, color: Colors.white),
+                          onPressed: () {},
+                          splashRadius: 24,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
           bottomNavigationBar: BottomNavWidget(
-            currentIndex: 1,
+            currentIndex: 2,
             onTap: (idx) {
               switch (idx) {
                 case 0:
                   Navigator.pushReplacementNamed(context, AppRoutes.home);
                   break;
                 case 1:
-                  // already on chat
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => ServiceRequestsScreen()),
+                  );
                   break;
                 case 2:
-                  Navigator.pushReplacementNamed(context, AppRoutes.profile);
+                  // already on Chat
                   break;
               }
             },

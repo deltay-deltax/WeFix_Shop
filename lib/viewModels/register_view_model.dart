@@ -21,6 +21,8 @@ class RegisterViewModel extends ChangeNotifier {
       TextEditingController();
   final TextEditingController profilePhotoController = TextEditingController();
   final TextEditingController shopCategoryController = TextEditingController();
+  final TextEditingController shopDescriptionController =
+      TextEditingController();
   final TextEditingController address1Controller = TextEditingController();
   final TextEditingController address2Controller = TextEditingController();
   final TextEditingController landmarkController = TextEditingController();
@@ -50,6 +52,19 @@ class RegisterViewModel extends ChangeNotifier {
 
   void setShopCategory(String? v) {
     shopCategoryController.text = v ?? '';
+    // Reset subcategories when category changes
+    selectedSubcategories.clear();
+    notifyListeners();
+  }
+
+  // Subcategories multi-select state
+  final List<String> selectedSubcategories = [];
+  void toggleSubcategory(String sub) {
+    if (selectedSubcategories.contains(sub)) {
+      selectedSubcategories.remove(sub);
+    } else {
+      selectedSubcategories.add(sub);
+    }
     notifyListeners();
   }
 
@@ -61,7 +76,57 @@ class RegisterViewModel extends ChangeNotifier {
   String? uploadedImageUrl;
   bool uploadingImage = false;
 
-  Future<void> prefillFromAuthAndDb() async {}
+  Future<void> prefillFromAuthAndDb() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      final uid = user?.uid;
+      // Prefill from auth
+      final authPhone = user?.phoneNumber;
+      if (authPhone != null && authPhone.trim().isNotEmpty) {
+        // strip +91 and spaces for UI field
+        final p = authPhone.replaceAll('+91', '').trim();
+        if (p.isNotEmpty) phoneController.text = p;
+      }
+      // Prefill from Firestore registered_shop_users
+      if (uid != null) {
+        final regSnap = await FirebaseFirestore.instance
+            .collection('registered_shop_users')
+            .doc(uid)
+            .get();
+        final reg = regSnap.data();
+        if (reg != null) {
+          companyLegalNameController.text = (reg['companyLegalName'] ?? '')
+              .toString();
+          selectedCompanyType = (reg['companyType'] as String?);
+          shopCategoryController.text = (reg['shopCategory'] ?? '').toString();
+          final subs =
+              (reg['subcategories'] as List?)?.cast<String>() ?? const [];
+          selectedSubcategories
+            ..clear()
+            ..addAll(subs);
+          shopDescriptionController.text = (reg['shopDescription'] ?? '')
+              .toString();
+          final addr = (reg['address'] as Map<String, dynamic>?) ?? {};
+          address1Controller.text = (addr['line1'] ?? '').toString();
+          address2Controller.text = (addr['line2'] ?? '').toString();
+          landmarkController.text = (addr['landmark'] ?? '').toString();
+          cityController.text = (addr['city'] ?? '').toString();
+          stateController.text = (addr['state'] ?? '').toString();
+          pincodeController.text = (addr['pincode'] ?? '').toString();
+          gmapUrlController.text = (reg['gmapUrl'] ?? '').toString();
+          final phoneDb = (reg['phone'] ?? '').toString();
+          if (phoneDb.isNotEmpty) {
+            final p = phoneDb.replaceAll('+91', '').trim();
+            phoneController.text = p;
+          }
+        }
+      }
+    } catch (_) {
+      // ignore silent prefill errors
+    } finally {
+      notifyListeners();
+    }
+  }
 
   void resetForNewForm() {
     hasGstin = true;
@@ -75,6 +140,8 @@ class RegisterViewModel extends ChangeNotifier {
     companyLegalNameController.clear();
     profilePhotoController.clear();
     shopCategoryController.clear();
+    shopDescriptionController.clear();
+    selectedSubcategories.clear();
     address1Controller.clear();
     address2Controller.clear();
     landmarkController.clear();
@@ -99,12 +166,29 @@ class RegisterViewModel extends ChangeNotifier {
       notifyListeners();
       return;
     }
+    // Check if phone exists in DB before verifying
+    final normalized = phone.startsWith('+') ? phone : '+91 ${phone.trim()}';
+    try {
+      final existing = await FirebaseFirestore.instance
+          .collection('registered_shop_users')
+          .where('phone', isEqualTo: normalized)
+          .limit(1)
+          .get();
+      if (existing.docs.isNotEmpty) {
+        error = 'Phone number already exists';
+        notifyListeners();
+        return;
+      }
+    } catch (_) {
+      // continue to verify if lookup fails
+    }
+
     verifyingPhone = true;
     error = null;
     notifyListeners();
 
     await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: phone.startsWith('+') ? phone : '+91 $phone',
+      phoneNumber: normalized,
       forceResendingToken: _resendToken,
       verificationCompleted: (credential) async {
         // Auto-retrieval or instant verification
@@ -182,6 +266,14 @@ class RegisterViewModel extends ChangeNotifier {
           .collection('registered_shop_users')
           .doc(uid)
           .set(payload, SetOptions(merge: true));
+      // Mirror essential fields to shop_users for quick header rendering
+      await FirebaseFirestore.instance.collection('shop_users').doc(uid).set({
+        'companyLegalName': companyLegalNameController.text.trim(),
+        'company': companyLegalNameController.text.trim(),
+        'phone': phoneController.text.trim().startsWith('+')
+            ? phoneController.text.trim()
+            : '+91 ${phoneController.text.trim()}',
+      }, SetOptions(merge: true));
       await AuthService.instance.updateProgress({'registration_done': true});
       if (context.mounted) {
         Navigator.pushNamedAndRemoveUntil(
@@ -208,6 +300,7 @@ class RegisterViewModel extends ChangeNotifier {
     companyLegalNameController.dispose();
     profilePhotoController.dispose();
     shopCategoryController.dispose();
+    shopDescriptionController.dispose();
     address1Controller.dispose();
     address2Controller.dispose();
     landmarkController.dispose();
@@ -259,6 +352,8 @@ class RegisterViewModel extends ChangeNotifier {
       'companyLegalName': companyLegalNameController.text.trim(),
       'companyType': selectedCompanyType,
       'shopCategory': shopCategoryController.text.trim(),
+      'subcategories': selectedSubcategories,
+      'shopDescription': shopDescriptionController.text.trim(),
       'address': {
         'line1': address1Controller.text.trim(),
         'line2': address2Controller.text.trim(),

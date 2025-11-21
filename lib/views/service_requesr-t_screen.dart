@@ -1,5 +1,8 @@
 // service_requests_screen.dart
 import 'package:flutter/material.dart';
+import '../widgets/BottomNavWidget.dart';
+import '../core/constants/app_routes.dart';
+import 'chat_screen.dart';
 import '../viewModels/service_requests_view_model.dart';
 import '../widgets/service_request_card.dart';
 import '../data/models/service_request_model.dart';
@@ -75,6 +78,25 @@ class ServiceRequestsScreen extends StatelessWidget {
         backgroundColor: Colors.blue,
         onPressed: () {},
         child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomNavWidget(
+        currentIndex: 1,
+        onTap: (idx) {
+          switch (idx) {
+            case 0:
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
+              break;
+            case 1:
+              // already on Service
+              break;
+            case 2:
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => ChatScreen()),
+              );
+              break;
+          }
+        },
       ),
     );
   }

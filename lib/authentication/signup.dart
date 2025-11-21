@@ -92,10 +92,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   keyboardType: TextInputType.phone,
                   fillColor: Colors.white,
                   prefix: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 15,
+                    ),
                     child: Text(
                       '+91',
                       style: const TextStyle(
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: Colors.black87,
                       ),

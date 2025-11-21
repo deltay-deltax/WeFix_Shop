@@ -9,8 +9,50 @@ class RegisterNewShopScreen extends StatelessWidget {
   const RegisterNewShopScreen({super.key});
 
   static const List<String> _kShopCategories = [
-    'HouseHold Electronics',
-    'Computer and Peripherals',
+    'HouseHold Electronics (Repairable)',
+    'Computer & Peripherals (Repairable)',
+  ];
+
+  static const List<String> _kHouseholdSubs = [
+    'Refrigerator (Fridge)',
+    'Washing Machine',
+    'Microwave Oven',
+    'Air Conditioner (AC)',
+    'Water Purifier / RO System',
+    'Geyser / Water Heater',
+    'Mixer / Grinder',
+    'Induction Cooktop',
+    'Electric Kettle',
+    'Vacuum Cleaner',
+    'Electric Iron',
+    'Air Cooler',
+    'Inverter / UPS',
+    'Smart TV / LED TV',
+    'Home Theatre System',
+    'Room Heater',
+    'Chimney / Exhaust Fan',
+    'Dishwasher',
+  ];
+
+  static const List<String> _kComputerSubs = [
+    'Laptop',
+    'Desktop CPU',
+    'Monitor',
+    'Printer',
+    'Scanner',
+    'Keyboard',
+    'Mouse',
+    'External Hard Disk / SSD / HDD',
+    'RAM',
+    'Graphic Card (GPU)',
+    'Motherboard',
+    'SMPS / Power Supply',
+    'Router / Modem',
+    'Webcam',
+    'Headphones / Headset',
+    'Microphone',
+    'UPS (for PC)',
+    'Pen Drive (logical repair / recovery)',
   ];
 
   @override
@@ -24,7 +66,7 @@ class RegisterNewShopScreen extends StatelessWidget {
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),
               child: ChangeNotifierProvider<RegisterViewModel>(
-                create: (_) => RegisterViewModel(),
+                create: (_) => RegisterViewModel()..prefillFromAuthAndDb(),
                 child: Consumer<RegisterViewModel>(
                   builder: (context, vm, _) {
                     return Column(
@@ -107,6 +149,11 @@ class RegisterNewShopScreen extends StatelessWidget {
                         _label('Shop Category'),
                         _shopCategoryDropdown(vm),
                         const SizedBox(height: 8),
+                        _label('Subcategories (select multiple)'),
+                        _subcategoriesMulti(vm),
+                        const SizedBox(height: 6),
+                        _commonRepairsHelper(vm),
+                        const SizedBox(height: 8),
 
                         const SizedBox(height: 16),
                         const Text(
@@ -127,6 +174,20 @@ class RegisterNewShopScreen extends StatelessWidget {
                           'Pincode*',
                           vm.pincodeController,
                           keyboardType: TextInputType.number,
+                        ),
+
+                        _label('Shop Description'),
+                        _roundedField(
+                          controller: vm.shopDescriptionController,
+                          hint:
+                              'Tell customers about your shop, specialties, experience, etc.',
+                        ),
+                        const SizedBox(height: 8),
+                        _label('Shop Google Maps URL (optional)'),
+                        _roundedField(
+                          controller: vm.gmapUrlController,
+                          hint: 'Paste your shop Google Maps URL',
+                          keyboardType: TextInputType.url,
                         ),
                         const SizedBox(height: 12),
                         _label('Phone Number*'),
@@ -172,12 +233,6 @@ class RegisterNewShopScreen extends StatelessWidget {
                         ),
 
                         const SizedBox(height: 8),
-                        _label('Shop Google Maps URL (optional)'),
-                        _roundedField(
-                          controller: vm.gmapUrlController,
-                          hint: 'Paste your shop Google Maps URL',
-                          keyboardType: TextInputType.url,
-                        ),
 
                         // Password fields remain removed
                         if (vm.error != null)
@@ -345,6 +400,51 @@ class RegisterNewShopScreen extends StatelessWidget {
               .toList(),
           onChanged: vm.setShopCategory,
         ),
+      ),
+    );
+  }
+
+  Widget _subcategoriesMulti(RegisterViewModel vm) {
+    List<String> options = const [];
+    final cat = vm.shopCategoryController.text;
+    if (cat == _kShopCategories[0]) {
+      options = _kHouseholdSubs;
+    } else if (cat == _kShopCategories[1]) {
+      options = _kComputerSubs;
+    }
+    if (options.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Text('Select a shop category first'),
+      );
+    }
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final sub in options)
+          FilterChip(
+            label: Text(sub),
+            selected: vm.selectedSubcategories.contains(sub),
+            onSelected: (_) => vm.toggleSubcategory(sub),
+          ),
+      ],
+    );
+  }
+
+  Widget _commonRepairsHelper(RegisterViewModel vm) {
+    if (vm.shopCategoryController.text != _kShopCategories[0]) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Text(
+        'Common repairs: motor issues, PCB faults, heating issues, gas leakage, power failure, sensor problems, fan replacement, etc.',
+        style: const TextStyle(fontSize: 12, color: Colors.black54),
       ),
     );
   }

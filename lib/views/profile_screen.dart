@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/app_routes.dart';
+import '../core/constants/app_colors.dart';
 import '../viewModels/profile_viewmodel.dart';
 import '../widgets/BottomNavWidget.dart';
-
 import '../core/services/auth_service.dart';
 
 class ProfileScreen extends StatelessWidget {
@@ -14,187 +14,132 @@ class ProfileScreen extends StatelessWidget {
       child: Consumer<ProfileViewModel>(
         builder: (context, vm, child) => Scaffold(
           body: SafeArea(
-            child: ListView(
-              padding: EdgeInsets.all(0),
-              children: [
-                // Header row
-                Padding(
-                  padding: EdgeInsets.fromLTRB(18, 26, 0, 15),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: vm.loading
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 18,
+                    ),
                     children: [
-                      Text(
-                        "Profile",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 28,
-                        ),
-                      ),
                       Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          IconButton(
-                            icon: Icon(Icons.notifications_none),
-                            onPressed: () {},
+                          const Text(
+                            'My Profile',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 26,
+                            ),
                           ),
-                          IconButton(
-                            icon: Icon(Icons.more_vert),
-                            onPressed: () {},
+                          Row(
+                            children: [
+                              if (!vm.editing)
+                                TextButton.icon(
+                                  onPressed: vm.startEditing,
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: AppColors.primary,
+                                  ),
+                                  label: const Text(
+                                    'Edit',
+                                    style: TextStyle(color: AppColors.primary),
+                                  ),
+                                )
+                              else ...[
+                                TextButton.icon(
+                                  onPressed: vm.saving ? null : vm.save,
+                                  icon: const Icon(
+                                    Icons.save,
+                                    color: AppColors.primary2,
+                                  ),
+                                  label: const Text(
+                                    'Save',
+                                    style: TextStyle(color: AppColors.primary2),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: vm.saving
+                                      ? null
+                                      : vm.cancelEditing,
+                                  child: const Text('Cancel'),
+                                ),
+                              ],
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                // Profile section (hardcoded image for now)
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-                  padding: EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(17),
-                  ),
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        radius: 37,
-                        backgroundColor: Colors.grey[200],
-                        child: Icon(
-                          Icons.local_shipping,
-                          size: 45,
-                          color: Colors.grey[700],
+                      const SizedBox(height: 12),
+                      _avatarHeader(vm),
+                      const SizedBox(height: 16),
+                      _sectionTitle('Business'),
+                      _field(
+                        'Company Legal Name',
+                        vm.companyLegalName,
+                        vm.editing,
+                      ),
+                      _field('Company Type', vm.companyType, vm.editing),
+                      _field('Shop Category', vm.shopCategory, vm.editing),
+                      _field('GSTIN', vm.gstin, vm.editing),
+                      const SizedBox(height: 10),
+                      _sectionTitle('Address'),
+                      _field('Address Line 1', vm.address1, vm.editing),
+                      _field('Address Line 2', vm.address2, vm.editing),
+                      _field('Landmark', vm.landmark, vm.editing),
+                      _field('Google Maps URL', vm.gmapUrl, vm.editing),
+                      _field('City', vm.city, vm.editing),
+                      _field('State', vm.state, vm.editing),
+                      _field(
+                        'Pincode',
+                        vm.pincode,
+                        vm.editing,
+                        keyboard: TextInputType.number,
+                      ),
+                      _field(
+                        'Phone',
+                        vm.phone,
+                        vm.editing,
+                        keyboard: TextInputType.phone,
+                      ),
+                      const SizedBox(height: 18),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(14),
                         ),
-                        // Use: backgroundImage: AssetImage('assets/your_profile_image.png'),
-                      ),
-                      SizedBox(width: 15),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              vm.name,
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 23,
-                              ),
-                            ),
-                            SizedBox(height: 3),
-                            Text(
-                              vm.email,
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            SizedBox(height: 6),
-                            GestureDetector(
-                              onTap: () {},
-                              child: Text(
-                                "Edit Profile",
-                                style: TextStyle(
-                                  color: Colors.blue,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 15),
-                // Actions card (hardcoded)
-                Container(
-                  margin: EdgeInsets.symmetric(horizontal: 18),
-                  padding: EdgeInsets.symmetric(vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(14),
-                  ),
-                  child: Column(
-                    children: [
-                      ProfileActionTile(
-                        icon: Icons.account_balance_wallet,
-                        label: "My Wallet",
-                      ),
-                      ProfileActionTile(
-                        icon: Icons.location_on,
-                        label: "Saved Addresses",
-                      ),
-                      ProfileActionTile(
-                        icon: Icons.verified_user,
-                        label: "Record Warranty",
-                        onTap: () {
-                          Navigator.pushNamed(context, AppRoutes.warranty);
-                        },
-                      ),
-                      ProfileActionTile(
-                        icon: Icons.settings,
-                        label: "Account Settings",
-                      ),
-                      ListTile(
-                        leading: Icon(
-                          Icons.logout,
-                          color: Colors.red,
-                          size: 28,
-                        ),
-                        title: Text(
-                          'Logout',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w500,
+                        child: ListTile(
+                          leading: const Icon(
+                            Icons.logout,
                             color: Colors.red,
+                            size: 28,
                           ),
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios,
-                          size: 17,
-                          color: Colors.red.shade300,
-                        ),
-                        onTap: () async {
-                          await AuthService.instance.signOut();
-                          Navigator.pushNamedAndRemoveUntil(
-                            context,
-                            AppRoutes.login,
-                            (route) => false,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                SizedBox(height: 15),
-                // Removed 'Track Your Orders' card
-                SizedBox(height: 25),
-                // Favorite Shops header
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 18),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        "Favorite Shops",
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 24,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () {},
-                        child: Text(
-                          "See All",
-                          style: TextStyle(color: Colors.blue),
+                          title: const Text(
+                            'Logout',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w500,
+                              color: Colors.red,
+                            ),
+                          ),
+                          trailing: Icon(
+                            Icons.arrow_forward_ios,
+                            size: 17,
+                            color: Colors.red.shade300,
+                          ),
+                          onTap: () async {
+                            await AuthService.instance.signOut();
+                            if (!context.mounted) return;
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              AppRoutes.login,
+                              (route) => false,
+                            );
+                          },
                         ),
                       ),
                     ],
                   ),
-                ),
-
-                // Favorite Shops grid
-                SizedBox(height: 16),
-              ],
-            ),
           ),
           bottomNavigationBar: BottomNavWidget(
             currentIndex: 2,
@@ -207,7 +152,6 @@ class ProfileScreen extends StatelessWidget {
                   Navigator.pushReplacementNamed(context, AppRoutes.chat);
                   break;
                 case 2:
-                  // already on profile
                   break;
               }
             },
@@ -216,6 +160,101 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Widget _avatarHeader(ProfileViewModel vm) {
+  final title = vm.companyLegalName.text.isNotEmpty
+      ? vm.companyLegalName.text
+      : 'My Shop';
+  return Container(
+    padding: const EdgeInsets.all(18),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(17),
+    ),
+    child: Row(
+      children: [
+        CircleAvatar(
+          radius: 34,
+          backgroundColor: AppColors.primary.withOpacity(0.1),
+          child: Text(
+            (title.isNotEmpty ? title[0] : '?').toUpperCase(),
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: AppColors.primary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                vm.email,
+                style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _sectionTitle(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(top: 12, bottom: 8),
+    child: Text(
+      text,
+      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 18),
+    ),
+  );
+}
+
+Widget _field(
+  String label,
+  TextEditingController controller,
+  bool editable, {
+  TextInputType? keyboard,
+}) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
+        const SizedBox(height: 6),
+        TextField(
+          controller: controller,
+          readOnly: !editable,
+          keyboardType: keyboard,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Colors.white,
+            hintText: 'Enter $label',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 // Hardcoded as a builder method for readability, but you can extract if needed.

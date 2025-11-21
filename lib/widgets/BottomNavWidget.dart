@@ -16,14 +16,14 @@ class BottomNavWidget extends StatelessWidget {
       currentIndex: currentIndex,
       onTap: onTap,
       items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
+        BottomNavigationBarItem(icon: Icon(Icons.home_outlined), label: "Home"),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.design_services_outlined),
+          label: "Service",
+        ),
         BottomNavigationBarItem(
           icon: Icon(Icons.chat_bubble_outline),
           label: "Chat",
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person_outline),
-          label: "Profile",
         ),
       ],
     );
