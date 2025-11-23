@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'core/constants/app_colors.dart';
 import 'routes/app_router.dart';
 import 'authentication/login.dart' as auth_login;
+
 import 'views/home_screen.dart';
 
 void main() async {

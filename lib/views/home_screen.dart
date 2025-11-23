@@ -613,16 +613,7 @@ class _AppDrawer extends StatelessWidget {
                 Navigator.of(context).pop();
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.person_outline),
-              title: const Text('My Profile'),
-              onTap: () {
-                Navigator.of(context).pop();
-                Navigator.of(
-                  context,
-                ).push(MaterialPageRoute(builder: (_) => ProfileScreen()));
-              },
-            ),
+
             ListTile(
               leading: const Icon(Icons.list_alt),
               title: const Text('Service Requests'),
@@ -645,6 +636,17 @@ class _AppDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.pushNamed(context, AppRoutes.addService);
+              },
+            ),
+
+            ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: const Text('My Profile'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(
+                  context,
+                ).push(MaterialPageRoute(builder: (_) => ProfileScreen()));
               },
             ),
             ListTile(
@@ -708,13 +710,13 @@ class _DrawerHeader extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: const Color(0xFF156EF5),
+            backgroundColor: Colors.white,
             radius: 28,
             child: Text(
               (name.isNotEmpty ? name[0] : '?').toUpperCase(),
               style: const TextStyle(
                 fontSize: 24,
-                color: Colors.white,
+                color: AppColors.primary,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -724,15 +726,6 @@ class _DrawerHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  name.isNotEmpty ? 'Hi $name' : 'Hi',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 4),
                 Text(
                   name.isNotEmpty ? name : 'My Shop',
                   style: const TextStyle(

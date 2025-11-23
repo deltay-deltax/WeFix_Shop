@@ -109,22 +109,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               ),
               const SizedBox(height: 18),
 
-              const Text(
-                'Pricing Type',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  _pricingTypeBtn('Fixed'),
-                  const SizedBox(width: 12),
-                  _pricingTypeBtn('Hourly'),
-                  const SizedBox(width: 12),
-                  _pricingTypeBtn('Per Item'),
-                ],
-              ),
-              const SizedBox(height: 18),
-
+              // Pricing type removed
               const Text(
                 'Amount',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -132,7 +117,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
               const SizedBox(height: 8),
               TextFormField(
                 decoration: const InputDecoration(
-                  prefixText: '\$ ',
+                  prefixText: '₹ ',
                   hintText: '0.00',
                   border: OutlineInputBorder(),
                 ),
@@ -176,7 +161,6 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
                         'name': service.name,
                         'description': service.description,
                         'category': service.category,
-                        'pricingType': service.pricingType,
                         'amount': service.amount,
                         'createdAt': FieldValue.serverTimestamp(),
                         'updatedAt': FieldValue.serverTimestamp(),
@@ -201,25 +185,5 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     );
   }
 
-  Widget _pricingTypeBtn(String label) {
-    final selected = widget.viewModel.service.pricingType == label;
-    return Expanded(
-      child: OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          backgroundColor: selected ? Colors.blue[50] : Colors.white,
-          side: BorderSide(color: selected ? Colors.blue : Colors.grey),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? Colors.blue : Colors.grey,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        onPressed: () => setState(() {
-          widget.viewModel.setPricingType(label);
-        }),
-      ),
-    );
-  }
+  // pricing type removed
 }

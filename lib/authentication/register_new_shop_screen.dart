@@ -112,36 +112,84 @@ class RegisterNewShopScreen extends StatelessWidget {
                         _label('Company Type*'),
                         _companyTypeDropdown(vm),
                         const SizedBox(height: 12),
-                        _label('Shop Image'),
-                        // Image picker and Shop Category below Company Type
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
+                        _label('Shop Photos (max 4)'),
+                        // Multi-photo picker with primary
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ElevatedButton(
-                              onPressed: vm.uploadingImage
-                                  ? null
-                                  : vm.pickAndUploadImage,
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(140, 44),
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: Text(
-                                vm.uploadingImage
-                                    ? 'Uploading...'
-                                    : 'Choose Image',
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            if (vm.uploadedImageUrl != null &&
-                                vm.uploadedImageUrl!.isNotEmpty)
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.network(
-                                  vm.uploadedImageUrl!,
-                                  width: 56,
-                                  height: 56,
-                                  fit: BoxFit.cover,
+                            Row(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: vm.uploadingImage
+                                      ? null
+                                      : vm.pickAndUploadImage,
+                                  style: ElevatedButton.styleFrom(
+                                    minimumSize: const Size(160, 44),
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: Text(
+                                    vm.uploadingImage
+                                        ? 'Uploading...'
+                                        : (vm.uploadedPhotos.length >= 4
+                                              ? 'Max reached'
+                                              : 'Add Photos'),
+                                  ),
                                 ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  '${vm.uploadedPhotos.length}/4',
+                                  style: const TextStyle(color: Colors.black54),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            if (vm.uploadedPhotos.isNotEmpty)
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  for (final url in vm.uploadedPhotos)
+                                    GestureDetector(
+                                      onTap: () => vm.setPrimaryPhoto(url),
+                                      child: Stack(
+                                        alignment: Alignment.topRight,
+                                        children: [
+                                          ClipRRect(
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            child: Image.network(
+                                              url,
+                                              width: 70,
+                                              height: 70,
+                                              fit: BoxFit.cover,
+                                            ),
+                                          ),
+                                          if (vm.primaryPhotoUrl == url)
+                                            Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
+                                                color: AppColors.primary,
+                                                borderRadius:
+                                                    const BorderRadius.only(
+                                                      topRight: Radius.circular(
+                                                        8,
+                                                      ),
+                                                      bottomLeft:
+                                                          Radius.circular(8),
+                                                    ),
+                                              ),
+                                              child: const Icon(
+                                                Icons.star,
+                                                color: Colors.white,
+                                                size: 16,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
                               ),
                           ],
                         ),
@@ -161,10 +209,34 @@ class RegisterNewShopScreen extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 8),
-                        _formField(
-                          'Address Line 1*',
-                          vm.address1Controller,
-                          hint: 'Enter address',
+                        // Address Line 1 with location fetch icon
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _label('Address Line 1*'),
+                            TextField(
+                              controller: vm.address1Controller,
+                              decoration: InputDecoration(
+                                hintText: 'Enter address',
+                                filled: true,
+                                fillColor: Colors.white,
+                                contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 14,
+                                ),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide.none,
+                                ),
+                                suffixIcon: IconButton(
+                                  tooltip: 'Use my location',
+                                  icon: const Icon(Icons.my_location),
+                                  onPressed: vm.fillAddressFromCurrentLocation,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                         ),
                         _formField('Address Line 2', vm.address2Controller),
                         _formField('Landmark', vm.landmarkController),
@@ -175,6 +247,23 @@ class RegisterNewShopScreen extends StatelessWidget {
                           vm.pincodeController,
                           keyboardType: TextInputType.number,
                         ),
+                        // Lat/Long fields (editable)
+                        _formField(
+                          'Latitude',
+                          vm.latitudeController,
+                          hint: 'e.g. 12.9716',
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
+                        _formField(
+                          'Longitude',
+                          vm.longitudeController,
+                          hint: 'e.g. 77.5946',
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                        ),
 
                         _label('Shop Description'),
                         _roundedField(
@@ -183,7 +272,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                               'Tell customers about your shop, specialties, experience, etc.',
                         ),
                         const SizedBox(height: 8),
-                        _label('Shop Google Maps URL (optional)'),
+                        _label('Shop Google Maps URL '),
                         _roundedField(
                           controller: vm.gmapUrlController,
                           hint: 'Paste your shop Google Maps URL',

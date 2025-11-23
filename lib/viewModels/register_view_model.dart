@@ -3,6 +3,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart' as geocoding;
 import '../core/services/auth_service.dart';
 import '../core/constants/app_routes.dart';
 import '../authentication/enter_otp_screen.dart';
@@ -29,6 +31,8 @@ class RegisterViewModel extends ChangeNotifier {
   final TextEditingController cityController = TextEditingController();
   final TextEditingController stateController = TextEditingController();
   final TextEditingController pincodeController = TextEditingController();
+  final TextEditingController latitudeController = TextEditingController();
+  final TextEditingController longitudeController = TextEditingController();
   final TextEditingController gmapUrlController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
@@ -73,7 +77,9 @@ class RegisterViewModel extends ChangeNotifier {
   bool submitting = false;
   String? error;
 
-  String? uploadedImageUrl;
+  // Images
+  final List<String> uploadedPhotos = [];
+  String? primaryPhotoUrl;
   bool uploadingImage = false;
 
   Future<void> prefillFromAuthAndDb() async {
@@ -113,12 +119,19 @@ class RegisterViewModel extends ChangeNotifier {
           cityController.text = (addr['city'] ?? '').toString();
           stateController.text = (addr['state'] ?? '').toString();
           pincodeController.text = (addr['pincode'] ?? '').toString();
+          latitudeController.text = (addr['lat'] ?? '').toString();
+          longitudeController.text = (addr['lng'] ?? '').toString();
           gmapUrlController.text = (reg['gmapUrl'] ?? '').toString();
           final phoneDb = (reg['phone'] ?? '').toString();
           if (phoneDb.isNotEmpty) {
             final p = phoneDb.replaceAll('+91', '').trim();
             phoneController.text = p;
           }
+          final photos = (reg['photos'] as List?)?.cast<String>() ?? const [];
+          uploadedPhotos
+            ..clear()
+            ..addAll(photos);
+          primaryPhotoUrl = (reg['primaryPhoto'] as String?);
         }
       }
     } catch (_) {
@@ -135,7 +148,8 @@ class RegisterViewModel extends ChangeNotifier {
     phoneVerified = false;
     submitting = false;
     error = null;
-    uploadedImageUrl = null;
+    uploadedPhotos.clear();
+    primaryPhotoUrl = null;
     gstinController.clear();
     companyLegalNameController.clear();
     profilePhotoController.clear();
@@ -148,6 +162,8 @@ class RegisterViewModel extends ChangeNotifier {
     cityController.clear();
     stateController.clear();
     pincodeController.clear();
+    latitudeController.clear();
+    longitudeController.clear();
     gmapUrlController.clear();
     phoneController.clear();
     emailController.clear();
@@ -319,11 +335,13 @@ class RegisterViewModel extends ChangeNotifier {
       uploadingImage = true;
       notifyListeners();
       final picker = ImagePicker();
-      final picked = await picker.pickImage(
-        source: ImageSource.gallery,
-        imageQuality: 80,
-      );
-      if (picked == null) {
+      if (uploadedPhotos.length >= 4) {
+        uploadingImage = false;
+        notifyListeners();
+        return;
+      }
+      final picked = await picker.pickMultiImage(imageQuality: 80);
+      if (picked.isEmpty) {
         uploadingImage = false;
         notifyListeners();
         return;
@@ -334,13 +352,81 @@ class RegisterViewModel extends ChangeNotifier {
         notifyListeners();
         return;
       }
-      final fileName =
-          'shop_images/$uid/${DateTime.now().millisecondsSinceEpoch}_${picked.name}';
-      final ref = FirebaseStorage.instance.ref().child(fileName);
-      await ref.putData(await picked.readAsBytes());
-      uploadedImageUrl = await ref.getDownloadURL();
+      for (final xFile in picked.take(4 - uploadedPhotos.length)) {
+        final fileName =
+            'shop_images/$uid/${DateTime.now().millisecondsSinceEpoch}_${xFile.name}';
+        final ref = FirebaseStorage.instance.ref().child(fileName);
+        await ref.putData(await xFile.readAsBytes());
+        final url = await ref.getDownloadURL();
+        uploadedPhotos.add(url);
+        primaryPhotoUrl ??= url;
+      }
     } finally {
       uploadingImage = false;
+      notifyListeners();
+    }
+  }
+
+  void setPrimaryPhoto(String url) {
+    if (uploadedPhotos.contains(url)) {
+      primaryPhotoUrl = url;
+      // Move primary to index 0 for UI convenience
+      uploadedPhotos.remove(url);
+      uploadedPhotos.insert(0, url);
+      notifyListeners();
+    }
+  }
+
+  Future<void> fillAddressFromCurrentLocation() async {
+    try {
+      error = null;
+      notifyListeners();
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        error = 'Location services are disabled';
+        notifyListeners();
+        return;
+      }
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          error = 'Location permission denied';
+          notifyListeners();
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        error = 'Location permission permanently denied';
+        notifyListeners();
+        return;
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      latitudeController.text = pos.latitude.toStringAsFixed(6);
+      longitudeController.text = pos.longitude.toStringAsFixed(6);
+      final placemarks = await geocoding.placemarkFromCoordinates(
+        pos.latitude,
+        pos.longitude,
+      );
+      if (placemarks.isNotEmpty) {
+        final p = placemarks.first;
+        address1Controller.text = [
+          p.subThoroughfare,
+          p.thoroughfare,
+        ].where((e) => (e ?? '').toString().isNotEmpty).join(' ').trim();
+        address2Controller.text = [
+          p.subLocality,
+          p.locality,
+        ].where((e) => (e ?? '').toString().isNotEmpty).join(', ');
+        cityController.text = p.locality ?? p.subAdministrativeArea ?? '';
+        stateController.text = p.administrativeArea ?? '';
+        pincodeController.text = p.postalCode ?? '';
+      }
+    } catch (e) {
+      error = e.toString();
+    } finally {
       notifyListeners();
     }
   }
@@ -361,11 +447,14 @@ class RegisterViewModel extends ChangeNotifier {
         'city': cityController.text.trim(),
         'state': stateController.text.trim(),
         'pincode': pincodeController.text.trim(),
+        'lat': latitudeController.text.trim(),
+        'lng': longitudeController.text.trim(),
       },
       'gmapUrl': gmapUrlController.text.trim(),
       'phone': phoneController.text.trim(),
       'email': emailController.text.trim(),
-      'imageUrl': uploadedImageUrl,
+      'photos': uploadedPhotos,
+      'primaryPhoto': primaryPhotoUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
     };

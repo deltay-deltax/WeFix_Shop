@@ -27,7 +27,7 @@ class AppRouter {
       case AppRoutes.requests:
         return MaterialPageRoute(builder: (_) => ServiceRequestsScreen());
       case AppRoutes.orders:
-        return MaterialPageRoute(builder: (_) => ServiceUpdateScreen());
+        return MaterialPageRoute(builder: (_) => ServiceHistoryScreen());
       case AppRoutes.analytics:
         return MaterialPageRoute(builder: (_) => AnalyticsScreen());
       case AppRoutes.addService:
