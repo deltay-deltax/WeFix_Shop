@@ -298,20 +298,6 @@ class _ChatScreenState extends State<ChatScreen> {
                 ),
               ],
             ),
-            bottomNavigationBar: BottomNavWidget(
-              currentIndex: 2,
-              onTap: (idx) {
-                if (idx == 0) {
-                  Navigator.pushReplacementNamed(context, AppRoutes.home);
-                }
-                if (idx == 1) {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => ServiceRequestsScreen()),
-                  );
-                }
-              },
-            ),
           ),
         ),
       ),

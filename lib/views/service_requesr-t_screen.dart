@@ -8,6 +8,7 @@ import '../core/constants/app_routes.dart'; // Assume this file exists
 import '../widgets/BottomNavWidget.dart'; // Assume this file exists
 import '../core/constants/app_colors.dart'; // Assume this file exists
 import 'chat_screen.dart'; // Assume this file exists
+import 'chat_users_screen.dart';
 import 'request_details_screen.dart';
 
 class ServiceRequestsScreen extends StatefulWidget {
@@ -135,7 +136,7 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
             case 2:
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => ChatScreen()),
+                MaterialPageRoute(builder: (_) => const ChatUsersScreen()),
               );
               break;
           }

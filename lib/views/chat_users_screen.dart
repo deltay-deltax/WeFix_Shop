@@ -3,6 +3,7 @@ import 'chat_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/constants/app_routes.dart';
+import '../core/constants/app_colors.dart';
 import '../widgets/BottomNavWidget.dart';
 
 class ChatUsersScreen extends StatelessWidget {
@@ -17,19 +18,53 @@ class ChatUsersScreen extends StatelessWidget {
         return false;
       },
       child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
           elevation: 0,
-          backgroundColor: Colors.white,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [AppColors.primary, AppColors.primary.withOpacity(0.8)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () =>
                 Navigator.pushReplacementNamed(context, AppRoutes.home),
           ),
-          title: const Text('Chats', style: TextStyle(color: Colors.black)),
-          iconTheme: const IconThemeData(color: Colors.black),
+          title: const Text(
+            'Messages',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
+            ),
+          ),
         ),
         body: myUid == null
-            ? const Center(child: Text('Please sign in'))
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.chat_bubble_outline,
+                      size: 80,
+                      color: Colors.grey.shade300,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Please sign in',
+                      style: TextStyle(
+                        fontSize: 18,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             : StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
                 stream: FirebaseFirestore.instance
                     .collection('chats')
@@ -42,11 +77,42 @@ class ChatUsersScreen extends StatelessWidget {
                   }
                   final chats = snap.data?.docs ?? const [];
                   if (chats.isEmpty) {
-                    return const Center(child: Text('No conversations'));
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.chat_bubble_outline_rounded,
+                            size: 100,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            'No conversations yet',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Start chatting with your customers',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
-                  return ListView.separated(
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     itemCount: chats.length,
-                    separatorBuilder: (_, __) => const Divider(height: 1),
                     itemBuilder: (context, i) {
                       final d = chats[i].data();
                       final chatId = chats[i].id;
@@ -58,11 +124,9 @@ class ChatUsersScreen extends StatelessWidget {
                         orElse: () => parts.isNotEmpty ? parts.first : '',
                       );
                       final lookupId = other;
-                      // Avoid using chat title to prevent duplicate names; prefer fetched user/shop name
                       final last = (d['lastMessage'] ?? '').toString();
                       final img = (d['image'] ?? null);
 
-                      // Prefer showing user profile if exists; else fallback to shop profile
                       return StreamBuilder<
                         DocumentSnapshot<Map<String, dynamic>>
                       >(
@@ -75,10 +139,12 @@ class ChatUsersScreen extends StatelessWidget {
                           final user = userSnap.data?.data();
                           final userName = user?['Name'];
                           final userAvatar = user?['profile'] ?? user?['image'];
+
                           if (userExists && userName != null) {
                             final name = userName.toString();
                             final avatar = img ?? userAvatar;
-                            return _chatTile(
+
+                            return _buildModernChatTile(
                               context,
                               chatId,
                               name,
@@ -86,6 +152,7 @@ class ChatUsersScreen extends StatelessWidget {
                               last,
                             );
                           }
+
                           return StreamBuilder<
                             DocumentSnapshot<Map<String, dynamic>>
                           >(
@@ -94,19 +161,31 @@ class ChatUsersScreen extends StatelessWidget {
                                 .doc(lookupId)
                                 .snapshots(),
                             builder: (context, shopSnap) {
+                              final shopExists =
+                                  (shopSnap.data?.exists ?? false);
                               final shop = shopSnap.data?.data();
-                              final name =
-                                  (shop?['company'] ??
-                                          shop?['companyLegalName'] ??
-                                          'Chat')
-                                      .toString();
-                              final avatar =
-                                  img ?? shop?['profile'] ?? shop?['image'];
-                              return _chatTile(
+                              final shopName = shop?['companyName'];
+                              final shopAvatar =
+                                  shop?['profile'] ?? shop?['image'];
+
+                              if (shopExists && shopName != null) {
+                                final name = shopName.toString();
+                                final avatar = img ?? shopAvatar;
+
+                                return _buildModernChatTile(
+                                  context,
+                                  chatId,
+                                  name,
+                                  avatar,
+                                  last,
+                                );
+                              }
+
+                              return _buildModernChatTile(
                                 context,
                                 chatId,
-                                name,
-                                avatar,
+                                'Unknown',
+                                null,
                                 last,
                               );
                             },
@@ -125,7 +204,7 @@ class ChatUsersScreen extends StatelessWidget {
                 Navigator.pushReplacementNamed(context, AppRoutes.home);
                 break;
               case 1:
-                Navigator.pushReplacementNamed(context, AppRoutes.orders);
+                Navigator.pushReplacementNamed(context, AppRoutes.requests);
                 break;
               case 2:
                 // already on Chat
@@ -136,38 +215,118 @@ class ChatUsersScreen extends StatelessWidget {
       ),
     );
   }
-}
 
-Widget _chatTile(
-  BuildContext context,
-  String chatId,
-  String name,
-  dynamic avatar,
-  String last,
-) {
-  return ListTile(
-    leading: CircleAvatar(
-      backgroundColor: Colors.grey.shade300,
-      backgroundImage: (avatar is String && avatar.isNotEmpty)
-          ? NetworkImage(avatar)
-          : null,
-      child: (avatar == null || (avatar is String && avatar.isEmpty))
-          ? Text(name.isNotEmpty ? name.substring(0, 1) : '?')
-          : null,
-    ),
-    title: Text(name),
-    subtitle: Text(
-      last.isEmpty ? 'Tap to open chat' : last,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    ),
-    onTap: () {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ChatScreen(),
-          settings: RouteSettings(arguments: chatId),
+  Widget _buildModernChatTile(
+    BuildContext context,
+    String chatId,
+    String name,
+    dynamic avatar,
+    String last,
+  ) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.08),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ChatScreen(),
+                settings: RouteSettings(arguments: chatId),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Avatar with gradient border
+                Container(
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.primary.withOpacity(0.6),
+                      ],
+                    ),
+                  ),
+                  padding: const EdgeInsets.all(2.5),
+                  child: CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.grey.shade100,
+                    backgroundImage: (avatar is String && avatar.isNotEmpty)
+                        ? NetworkImage(avatar)
+                        : null,
+                    child:
+                        (avatar == null || (avatar is String && avatar.isEmpty))
+                        ? Text(
+                            name.isNotEmpty
+                                ? name.substring(0, 1).toUpperCase()
+                                : '?',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                            ),
+                          )
+                        : null,
+                  ),
+                ),
+                const SizedBox(width: 16),
+
+                // Name and message
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                          color: AppColors.icon,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        last.isEmpty ? 'Tap to open chat' : last,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Arrow icon
+                Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 16,
+                  color: Colors.grey.shade400,
+                ),
+              ],
+            ),
+          ),
         ),
-      );
-    },
-  );
+      ),
+    );
+  }
 }
