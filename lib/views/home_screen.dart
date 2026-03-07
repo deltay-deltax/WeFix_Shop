@@ -61,6 +61,20 @@ class HomeScreen extends StatelessWidget {
                 .toString()
                 .trim();
 
+        Widget buildScaffoldWithActiveStream(String company) {
+          return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: FirebaseFirestore.instance
+                .collection('registered_shop_users')
+                .doc(user.uid)
+                .snapshots(),
+            builder: (ctx, regSnap) {
+              final active = regSnap.data?.data()?['active'] == true;
+              return _buildScaffold(
+                  context, user.uid, company, incomplete, active);
+            },
+          );
+        }
+
         if (primaryCompany.isEmpty) {
           final futureCompany = (() async {
             final prefs = await SharedPreferences.getInstance();
@@ -81,7 +95,7 @@ class HomeScreen extends StatelessWidget {
             future: futureCompany,
             builder: (ctx, futureSnap) {
               final company = (futureSnap.data ?? '').trim();
-              return _buildScaffold(context, user.uid, company, incomplete);
+              return buildScaffoldWithActiveStream(company);
             },
           );
         }
@@ -92,7 +106,7 @@ class HomeScreen extends StatelessWidget {
             p.setString('company_name_${user.uid}', company);
           }
         });
-        return _buildScaffold(context, user.uid, company, incomplete);
+        return buildScaffoldWithActiveStream(company);
       },
     );
   }
@@ -102,6 +116,7 @@ class HomeScreen extends StatelessWidget {
     String uid,
     String companyName,
     bool incomplete,
+    bool isActive,
   ) {
     return WillPopScope(
       onWillPop: () async => false,
@@ -131,17 +146,19 @@ class HomeScreen extends StatelessWidget {
         ),
         body: incomplete
             ? const _OnboardingGate()
-            : RefreshIndicator(
-                onRefresh: () async {
-                  // Refresh data
-                  await Future.delayed(const Duration(milliseconds: 500));
-                },
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+            : (!isActive
+                ? const _WaitingForConfirmationGate()
+                : RefreshIndicator(
+                    onRefresh: () async {
+                      // Refresh data
+                      await Future.delayed(const Duration(milliseconds: 500));
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                       // Greeting Section
                       Text(
                         _getGreeting(),
@@ -234,8 +251,8 @@ class HomeScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
-        bottomNavigationBar: incomplete
+              )),
+        bottomNavigationBar: (incomplete || !isActive)
             ? null
             : BottomNavWidget(
                 currentIndex: 0,
@@ -309,7 +326,8 @@ class _StatsGrid extends StatelessWidget {
               pendingCount++;
             } else if (status == 'in_progress' ||
                 status == 'confirm' ||
-                status == 'waiting_for_confirmation') {
+                status == 'waiting_for_confirmation' ||
+                status == 'in_service') {
               inProgressCount++;
             } else if (status == 'completed' ||
                 status == 'paid' ||
@@ -348,7 +366,7 @@ class _StatsGrid extends StatelessWidget {
               ),
             ),
             _StatCard(
-              title: 'In Progress',
+              title: 'Awaiting Drop-off',
               value: inProgressCount.toString(),
               icon: Icons.handyman_rounded,
               gradient: const LinearGradient(
@@ -1376,6 +1394,79 @@ class _OnboardingGate extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+}
+
+class _WaitingForConfirmationGate extends StatelessWidget {
+  const _WaitingForConfirmationGate({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.center,
+      child: Material(
+        color: Colors.transparent,
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 24),
+            padding: const EdgeInsets.all(24),
+            constraints: const BoxConstraints(maxWidth: 420),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(14),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.admin_panel_settings_rounded,
+                  size: 64,
+                  color: AppColors.primary,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Waiting for Confirmation',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Your registration has been submitted and is currently under review by our admin team. You will be able to access your dashboard once your shop is verified.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: Colors.black54,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  height: 44,
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {},
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade300,
+                      foregroundColor: Colors.black54,
+                    ),
+                    child: const Text('Under Review'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

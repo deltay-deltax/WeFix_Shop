@@ -422,7 +422,7 @@ class _RequestsList extends StatelessWidget {
             case _ReqFilter.newOnly:
               return status.isEmpty || status == 'pending' || status == 'new';
             case _ReqFilter.inProgress:
-              return status == 'confirm' || status == 'in_progress' || status == 'payment_required' || status == 'accepted' || status == 'waiting_for_confirmation';
+              return status == 'confirm' || status == 'in_progress' || status == 'payment_required' || status == 'accepted' || status == 'waiting_for_confirmation' || status == 'in_service';
           }
         }).toList();
 
@@ -605,7 +605,7 @@ class _RequestCard extends StatelessWidget {
 
     final s = status.toLowerCase();
     final isPending = s == 'pending' || s == 'new' || s == '';
-    final isInProgress = s == 'in_progress' || s == 'confirm' || s == 'accepted' || s == 'waiting_for_confirmation';
+    final isInProgress = s == 'in_progress' || s == 'confirm' || s == 'accepted' || s == 'waiting_for_confirmation' || s == 'in_service';
     final isCompleted = s == 'completed' || s == 'paid';
 
     return Card(
@@ -749,7 +749,7 @@ class _StatusChip extends StatelessWidget {
     } else if (s == 'pending' || s == 'new') {
       bg = const Color(0xFFFEF3C7);
       text = const Color(0xFFB54708);
-    } else if (s == 'in_progress' || s == 'confirm' || s == 'waiting_for_confirmation') {
+    } else if (s == 'in_progress' || s == 'confirm' || s == 'waiting_for_confirmation' || s == 'in_service') {
       bg = const Color(0xFFD1E9FF);
       text = const Color(0xFF175CD3);
     }
@@ -761,7 +761,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: Text(
-        status.toUpperCase().replaceAll('_', ' '),
+        s == 'in_progress' ? 'AWAITING DROP-OFF' : status.toUpperCase().replaceAll('_', ' '),
         style: TextStyle(
           color: text,
           fontSize: 11,

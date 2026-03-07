@@ -289,6 +289,7 @@ class RegisterViewModel extends ChangeNotifier {
         'phone': phoneController.text.trim().startsWith('+')
             ? phoneController.text.trim()
             : '+91 ${phoneController.text.trim()}',
+        'active': false,
       }, SetOptions(merge: true));
       await AuthService.instance.updateProgress({'registration_done': true});
       if (context.mounted) {
@@ -457,6 +458,7 @@ class RegisterViewModel extends ChangeNotifier {
       'primaryPhoto': primaryPhotoUrl,
       'createdAt': FieldValue.serverTimestamp(),
       'updatedAt': FieldValue.serverTimestamp(),
+      'active': false,
     };
   }
 }

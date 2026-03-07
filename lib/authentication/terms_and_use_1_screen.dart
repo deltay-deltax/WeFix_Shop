@@ -46,83 +46,55 @@ class _TermsAndUse1ScreenState extends State<TermsAndUse1Screen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const SingleChildScrollView(
-                        child: Text(
-                          '''1. Acceptance of Terms
+                        child: Text('''1. Acceptance of Terms
 
-Welcome to [Your App Name] ("App"), operated by [Your Company Name] ("we", "us", or "our"). By accessing or using our App, you agree to comply with and be bound by these Terms of Use ("Terms"). If you do not agree, please do not use the App.
+Welcome to WeFix Shop App ("App"), operated by WeFix ("we", "us", or "our"). By accessing or using our App to provide your services, you agree to comply with and be bound by these Terms of Use ("Terms"). If you do not agree, please do not use the App.
 
-By continuing to use the App, you acknowledge that you are at least 18 years old or have the consent of a parent or guardian to use the Services.
-
----
-
-2. Changes to Terms
-
-We may modify or update these Terms from time to time. When we do, the updated date at the top of this page will be revised. Continued use of the App after changes means you accept those changes.
+By continuing to use the App, you acknowledge that you are at least 18 years old and legally competent to enter into a contract under the Indian Contract Act, 1872.
 
 ---
 
-3. Use of the App
+2. Service Commission
+
+By registering as a service provider on our platform, you agree that WeFix shall deduct a flat 20% commission on the total value of each service request completed through the App. This commission is non-negotiable and will be deducted from your earnings or billed to you as per our payment cycle.
+
+---
+
+3. Banner Advertisement Services
+
+We offer promotional banner advertisement spaces within the WeFix user app to help you grow your business. The advertising fees are structured as follows:
+- Weekly Plan: ₹2,000 to ₹3,000 per week.
+- Monthly Plan: ₹8,000 to ₹10,000 per month.
+Prices may vary based on slot availability and promotional offers. Advertisement fees must be paid in advance.
+
+---
+
+4. Use of the App
 
 You agree to use the App only for lawful purposes and in accordance with these Terms. You shall not:
 - Use the App for any illegal or unauthorized purpose.
 - Attempt to hack, reverse engineer, or disrupt the App’s functionality.
-- Use automated systems (such as bots or scrapers) to access data from the App.
+- Bypass our platform to fulfill service requests offline to avoid commission.
 
 ---
 
-4. Accounts and Registration
+5. Accounts and Registration
 
-When you create an account, you agree to provide accurate and complete information. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account.
-
-If we suspect unauthorized access or misuse, we reserve the right to suspend or terminate your account immediately.
+When you create an account, you agree to provide accurate and complete information, including valid GSTIN and KYC details if applicable under Indian law. You are responsible for maintaining the confidentiality of your login credentials.
 
 ---
 
-5. Intellectual Property Rights
+6. Governing Law and Dispute Resolution
 
-All content, trademarks, logos, and design elements available through the App are owned or licensed by [Your Company Name]. You may not reproduce, distribute, or modify any part of the App without prior written consent.
-
----
-
-6. Privacy Policy
-
-Your use of the App is also governed by our Privacy Policy, which explains how we collect, use, and protect your personal data. Please review it carefully before using the App.
+These Terms shall be governed by and interpreted in accordance with the laws of India. Any disputes arising out of or relating to these Terms shall be subject to the exclusive jurisdiction of the courts in India.
 
 ---
 
-7. Disclaimer of Warranties
-
-The App and all related services are provided on an “as-is” and “as-available” basis. We do not guarantee uninterrupted or error-free service. You use the App at your own risk.
-
----
-
-8. Limitation of Liability
-
-To the fullest extent permitted by law, [Your Company Name] shall not be liable for any direct, indirect, incidental, or consequential damages arising out of your use or inability to use the App.
-
----
-
-9. Termination
-
-We reserve the right to suspend or terminate your access to the App at any time, without notice, for conduct that violates these Terms or is harmful to other users or us.
-
----
-
-10. Governing Law
-
-These Terms shall be governed and interpreted in accordance with the laws of [Your Country/State], without regard to its conflict of law provisions.
-
----
-
-11. Contact Us
+7. Contact Us
 
 If you have any questions about these Terms, please contact us at:
-📧 support@[yourappname].com
-📞 +91-XXXXXXXXXX
-
-Thank you for using [Your App Name].''',
-                          style: TextStyle(fontSize: 15, height: 1.5),
-                        ),
+📧 support@wefix.com
+📞 +91-XXXXXXXXXX''', style: TextStyle(fontSize: 15, height: 1.5)),
                       ),
                     ),
                   ),

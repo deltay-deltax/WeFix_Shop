@@ -56,89 +56,65 @@ class _PrivacyAndPolicyState extends State<PrivacyAndPolicy> {
                       child: const SingleChildScrollView(
                         child: Text('''1. Introduction
 
-Welcome to [Your App Name] ("App"), operated by [Your Company Name] ("we", "us", or "our"). This Privacy Policy explains how we collect, use, and protect your personal information when you use our App and related services.
+Welcome to the WeFix Shop App ("App"). This Privacy Policy explains how WeFix ("we", "us", or "our") collects, uses, and protects your personal and business information in compliance with the Information Technology Act, 2000 and applicable Indian laws.
 
-By using our App, you agree to the collection and use of your data in accordance with this Privacy Policy.
+By using our App, you consent to the data practices described in this policy.
 
 ---
 
 2. Information We Collect
 
 We may collect the following types of information:
-- **Personal Information**: Name, email address, phone number, or other identifiers you provide during registration or communication.
-- **Usage Data**: Information about how you interact with our App, such as pages viewed, time spent, and navigation patterns.
-- **Device Information**: Device model, operating system, unique device identifiers, and IP address.
-- **Location Data** (if applicable): Only when you grant permission through your device settings.
+- **Personal & Business Information**: Name, business name, address, email, phone number, KYC documents, and GST details necessary for vendor onboarding.
+- **Financial Information**: Bank account details or UPI IDs for processing payouts and managing the 20% service commission.
+- **Service & Usage Data**: Details of services provided, reviews, and interaction logs.
+- **Device & Location Data**: Your live location to assign nearby service requests, operating system, and IP address.
 
 ---
 
 3. How We Use Your Information
 
 We use your information to:
-- Provide, maintain, and improve our services.
-- Personalize user experience and deliver relevant content.
-- Communicate important updates, promotions, or security alerts.
-- Detect, prevent, and address fraud or technical issues.
-- Comply with legal obligations.
+- Onboard you as a verified service provider.
+- Manage and process service requests and deduct the agreed 20% commission per service.
+- Process payments for banner advertisements (₹2,000-₹3,000/week or ₹8,000-₹10,000/month).
+- Ensure safety, resolve disputes, and comply with legal obligations under Indian law.
 
 We do **not** sell or rent your personal data to third parties.
 
 ---
 
-4. Data Storage and Security
+4. Data Sharing and Disclosure
 
-We implement industry-standard security measures to protect your data. However, no online service is completely secure, and we cannot guarantee absolute data protection.
-
-Your data is stored securely on cloud servers or service providers that comply with applicable privacy regulations.
-
----
-
-5. Sharing of Information
-
-We may share your information only in the following cases:
-- With trusted third-party service providers who assist in operating our App.
-- To comply with legal obligations.
-- To protect our rights or prevent fraud.
+We may share your information only with:
+- Customers (Users) booking your services.
+- Trusted third-party payment gateways (e.g., Razorpay, PhonePe) for processing transactions.
+- Law enforcement agencies if required under Indian law.
 
 ---
 
-6. Cookies and Tracking Technologies
+5. Data Security
 
-We may use cookies or similar technologies to improve user experience, analyze trends, and understand usage patterns.
-
----
-
-7. Your Data Rights
-
-You may have the right to:
-- Access your data
-- Request correction or deletion
-- Withdraw consent
-- Request data copy (portability)
+We implement robust, industry-standard security measures to protect your data. However, no electronic transmission or storage is 100% secure.
 
 ---
 
-8. Third-Party Links
+6. Your Rights
 
-We are not responsible for the privacy policies of external third-party sites.
-
----
-
-9. Children’s Privacy
-
-We do not knowingly collect data from children under 13.
+You have the right to access, correct, or request deletion of your data, subject to legal and accounting retention requirements in India.
 
 ---
 
-10. Updates
+7. Updates
 
-This Privacy Policy may be updated. Continued use = acceptance.
+This Privacy Policy may be updated periodically. Your continued use of the App signifies your acceptance of any changes.
 
 ---
 
-11. Contact Us
+8. Contact Us
 
-Email: support@[yourappname].com
+For any privacy-related concerns or grievances, please contact our Grievance Officer at:
+Email: support@wefix.com
 Phone: +91-XXXXXXXXXX
 ''', style: TextStyle(fontSize: 15, height: 1.5)),
                       ),

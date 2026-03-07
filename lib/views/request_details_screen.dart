@@ -404,45 +404,99 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
           ),
         ],
       );
-    } else if (status.toLowerCase() == 'in_progress' || status.toLowerCase() == 'confirm') {
+    } else if (status.toLowerCase() == 'in_progress' || status.toLowerCase() == 'confirm' || status.toLowerCase() == 'in_service') {
       return Column(
         children: [
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () {
-                 Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UpdateServiceDetailsScreen(
-                      requestId: widget.requestId,
-                      shopUid: widget.shopUid,
-                      currentData: d,
+          if (status.toLowerCase() == 'in_progress') ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue[200]!),
+              ),
+              child: Column(
+                children: const [
+                  Icon(Icons.inventory_2_outlined, size: 40, color: Colors.blue),
+                  SizedBox(height: 8),
+                  Text(
+                    'Awaiting Product Drop-off',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
                     ),
                   ),
-                );
+                  SizedBox(height: 4),
+                  Text(
+                    'The customer has been prompted to drop off or courier their device to your shop.',
+                    style: TextStyle(color: Colors.blue),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (status.toLowerCase() == 'in_progress' || status.toLowerCase() == 'in_service') ...[
+            CheckboxListTile(
+              value: status.toLowerCase() == 'in_service',
+              onChanged: (val) {
+                if (val == true) {
+                  _updateStatus('in_service');
+                } else {
+                  _updateStatus('in_progress');
+                }
               },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              title: const Text(
+                "Product Received from Customer",
+                style: TextStyle(fontWeight: FontWeight.bold),
               ),
-              child: const Text('Update Details', style: TextStyle(fontSize: 16, color: Colors.white)),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppColors.primary,
             ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => _updateStatus('completed'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF027A48), // Green
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            const SizedBox(height: 16),
+          ],
+          if (status.toLowerCase() == 'in_service' || status.toLowerCase() == 'confirm') ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => UpdateServiceDetailsScreen(
+                        requestId: widget.requestId,
+                        shopUid: widget.shopUid,
+                        currentData: d,
+                      ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Update Details', style: TextStyle(fontSize: 16, color: Colors.white)),
               ),
-              child: const Text('Mark as Completed', style: TextStyle(fontSize: 16, color: Colors.white)),
             ),
-          ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => _updateStatus('completed'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF027A48), // Green
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('Mark as Completed', style: TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+            ),
+          ],
         ],
       );
     } else if (status.toLowerCase() == 'payment_required') {
@@ -590,7 +644,7 @@ class _StatusChip extends StatelessWidget {
     } else if (s == 'pending' || s == 'new') {
       bg = const Color(0xFFFEF3C7);
       text = const Color(0xFFB54708);
-    } else if (s == 'in_progress' || s == 'confirm' || s == 'waiting_for_confirmation') {
+    } else if (s == 'in_progress' || s == 'confirm' || s == 'waiting_for_confirmation' || s == 'in_service') {
       bg = const Color(0xFFD1E9FF);
       text = const Color(0xFF175CD3);
     } else if (s == 'declined') {
@@ -608,7 +662,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        status.toUpperCase().replaceAll('_', ' '),
+        s == 'in_progress' ? 'AWAITING DROP-OFF' : status.toUpperCase().replaceAll('_', ' '),
         style: TextStyle(
           color: text,
           fontSize: 12,
