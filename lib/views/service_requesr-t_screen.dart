@@ -45,7 +45,9 @@ class _ServiceRequestsScreenState extends State<ServiceRequestsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.pushNamed(context, AppRoutes.notifications);
+            },
           ),
         ],
         leading: Builder(

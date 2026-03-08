@@ -12,6 +12,7 @@ android {
     ndkVersion = "27.0.12077973"
 
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
@@ -45,6 +46,7 @@ flutter {
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
     // Firebase BoM to manage versions
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     // Add at least one Firebase SDK; analytics is safe and validates setup

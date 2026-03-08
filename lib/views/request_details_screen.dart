@@ -439,14 +439,12 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
             ),
             const SizedBox(height: 16),
           ],
-          if (status.toLowerCase() == 'in_progress' || status.toLowerCase() == 'in_service') ...[
+          if (status.toLowerCase() == 'in_progress') ...[
             CheckboxListTile(
-              value: status.toLowerCase() == 'in_service',
+              value: false, // It's only shown when false (in_progress)
               onChanged: (val) {
                 if (val == true) {
                   _updateStatus('in_service');
-                } else {
-                  _updateStatus('in_progress');
                 }
               },
               title: const Text(

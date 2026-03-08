@@ -1,0 +1,137 @@
+/**
+ * WeFix Shop – Cloud Functions
+ *
+ * onRequestStatusChanged — Sends push notifications to the shop owner
+ * whenever a service request status changes on their document.
+ *
+ * Triggers:
+ *   pending          → New request from customer
+ *   payment_done     → Customer has paid
+ *   payment_on_delivery → Customer chose pay on delivery
+ *
+ * FCM token is stored in shop_users/{shopId}.fcmToken by the shop app.
+ */
+
+const functions = require("firebase-functions");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+
+// ── Firestore Trigger: Service Request Status → Shop Push Notification ────────
+exports.onRequestStatusChangedShop = functions.firestore
+    .document("shop_users/{shopId}/requests/{requestId}")
+    .onWrite(async (change, context) => {
+        const { shopId, requestId } = context.params;
+
+        // Document deleted → ignore
+        if (!change.after.exists) return null;
+
+        const dataBefore = change.before.data() || {};
+        const dataAfter = change.after.data();
+
+        const statusBefore = dataBefore.status;
+        const statusAfter = dataAfter.status;
+        const amount = dataAfter.amount || "";
+
+        // Only act on actual status changes
+        if (statusBefore === statusAfter) return null;
+
+        // Customer name stored on the request document
+        const customerName = dataAfter.customerName
+            || dataAfter.name
+            || dataAfter.yourName
+            || "A customer";
+
+        functions.logger.log(
+            `Status change: ${statusBefore} → ${statusAfter} | request: ${requestId} | shop: ${shopId}`
+        );
+
+        // Map status → notification content for the SHOP OWNER
+        let title = null;
+        let body = null;
+
+        switch (statusAfter) {
+            case "pending":
+            case "Pending":
+                title = "New Service Request 🔔";
+                body = `${customerName} has submitted a new service request. Open the app to review and respond.`;
+                break;
+            case "in_progress":
+                title = "Service Request in Progress ";
+                body = `${customerName} has accepted the Service. Please Wait until they drop/Courier the product.`;
+                break;
+            case "in_service":
+                title = "Start Service";
+                body = `${customerName} has dropped  the Product. Please start the repair process.`;
+                break;
+
+            case "payment_done":
+                title = "Payment Received ✅";
+                body = `${customerName} has successfully paid ₹${amount}. Please prepare the device for handover.`;
+                break;
+
+            case "payment_on_delivery":
+                title = "Pay on Delivery 📦";
+                body = `${customerName} has opted for payment on delivery. Collect ₹${amount} when returning the device.`;
+                break;
+
+            default:
+                // No shop notification for other status transitions
+                return null;
+        }
+
+        // Fetch the shop's FCM token
+        const shopDoc = await admin.firestore().collection("shop_users").doc(shopId).get();
+        if (!shopDoc.exists) return null;
+
+        const shopToken = shopDoc.data().fcmToken;
+        if (!shopToken) {
+            functions.logger.log(`Shop ${shopId} has no fcmToken registered.`);
+            return null;
+        }
+
+        // Send push notification to the shop owner
+        try {
+            const response = await admin.messaging().send({
+                token: shopToken,
+                notification: { title, body },
+                android: {
+                    priority: "high",
+                    notification: {
+                        sound: "default",
+                        clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                    },
+                },
+                apns: {
+                    payload: { aps: { sound: "default" } },
+                },
+                data: { requestId, shopId },
+            });
+            functions.logger.log(
+                `Push sent to shop ${shopId} (${statusAfter}):`, response
+            );
+        } catch (err) {
+            functions.logger.error(
+                `Error sending push for request ${requestId}:`, err
+            );
+        }
+
+        // Save to shop_users/{shopId}/notifications for in-app history
+        await admin.firestore()
+            .collection("shop_users")
+            .doc(shopId)
+            .collection("notifications")
+            .add({
+                title,
+                body,
+                type: statusAfter === "payment_done" || statusAfter === "payment_on_delivery"
+                    ? "success"
+                    : "info",
+                requestId,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                isRead: false,
+            });
+
+        functions.logger.log(`Notification saved → shop_users/${shopId}/notifications`);
+        return null;
+    });

@@ -7,11 +7,9 @@ import '../widgets/notification_tile.dart';
 class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => NotificationsViewModel(),
-      child: Consumer<NotificationsViewModel>(
-        builder: (context, vm, child) => Scaffold(
-          body: SafeArea(
+    return Consumer<NotificationsViewModel>(
+      builder: (context, vm, child) => Scaffold(
+        body: SafeArea(
             child: ListView(
               children: [
                 Padding(
@@ -38,14 +36,31 @@ class NotificationsScreen extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 19, vertical: 9),
                 ),
-                ...vm.notifications
-                    .map((notif) => NotificationTile(notif: notif))
-                    .toList(),
+                if (vm.isLoading)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
+                else if (vm.notifications.isEmpty)
+                  const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(40.0),
+                      child: Text(
+                        "No notifications yet.",
+                        style: TextStyle(fontSize: 16, color: Colors.grey),
+                      ),
+                    ),
+                  )
+                else
+                  ...vm.notifications
+                      .map((notif) => NotificationTile(notif: notif))
+                      .toList(),
               ],
             ),
           ),
         ),
-      ),
     );
   }
 }
