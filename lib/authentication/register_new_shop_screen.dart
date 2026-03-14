@@ -35,6 +35,7 @@ class RegisterNewShopScreen extends StatelessWidget {
   ];
 
   static const List<String> _kComputerSubs = [
+    'Phone',
     'Laptop',
     'Desktop CPU',
     'Monitor',
