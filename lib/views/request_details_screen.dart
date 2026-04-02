@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wefix_shop/core/constants/app_colors.dart';
 import 'package:wefix_shop/views/update_service_details_screen.dart';
+import 'package:wefix_shop/services/borzo_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class RequestDetailsScreen extends StatefulWidget {
   final String requestId;
@@ -21,8 +23,141 @@ class RequestDetailsScreen extends StatefulWidget {
 
 
 class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
-  bool _paymentReceived = false;
+  bool _isSchedulingReverseDrop = false;
 
+  Future<void> _scheduleReverseDrop(Map<String, dynamic> d) async {
+    setState(() {
+      _isSchedulingReverseDrop = true;
+    });
+    try {
+      final shopDoc = await FirebaseFirestore.instance.collection('registered_shop_users').doc(widget.shopUid).get();
+      final shopData = shopDoc.data() ?? {};
+      
+      final userId = (d['userId'] ?? d['uid'] ?? d['customerId'] ?? '').toString();
+      dynamic uAddrObj = d['pickupAddress'] ?? d['address'];
+      double? uLat;
+      double? uLng;
+      String uAddrStr = '';
+      
+      if (d['latitude'] != null) uLat = double.tryParse(d['latitude'].toString());
+      if (d['longitude'] != null) uLng = double.tryParse(d['longitude'].toString());
+
+      // Attempt to load the exact address details from the user's subcollection
+      if (userId.isNotEmpty) {
+        try {
+           final addrsSnap = await FirebaseFirestore.instance.collection('users').doc(userId).collection('addresses').get();
+           if (addrsSnap.docs.isNotEmpty) {
+              // Try to find the closest match or fallback to the first
+              String targetAddrStr = uAddrObj.toString();
+              DocumentSnapshot? bestMatch;
+              
+              for (var doc in addrsSnap.docs) {
+                 final mapData = doc.data();
+                 if (mapData['addressLine1'] != null && targetAddrStr.contains(mapData['addressLine1'].toString())) {
+                    bestMatch = doc;
+                    break;
+                 }
+              }
+              bestMatch ??= addrsSnap.docs.first;
+              
+              final adMap = bestMatch.data() as Map<String, dynamic>;
+              if (uLat == null) uLat = double.tryParse(adMap['lat']?.toString() ?? '');
+              if (uLng == null) uLng = double.tryParse(adMap['lng']?.toString() ?? '');
+              
+              // If the request doc only had a string, let's use this rich object instead!
+              if (uAddrObj is! Map) {
+                 uAddrObj = adMap;
+              }
+           }
+        } catch (e) {
+           debugPrint('Could not fetch user addresses subcollection: $e');
+        }
+      }
+      
+      // Parse out the final string
+      if (uAddrObj is Map) {
+        if (uLat == null && uAddrObj['lat'] != null) uLat = double.tryParse(uAddrObj['lat'].toString());
+        if (uLng == null && uAddrObj['lng'] != null) uLng = double.tryParse(uAddrObj['lng'].toString());
+        final parts = [uAddrObj['addressLine1'], uAddrObj['line1'], uAddrObj['addressLine2'], uAddrObj['line2'], uAddrObj['city'], uAddrObj['state'], uAddrObj['pincode']];
+        uAddrStr = parts.where((e) => e != null && e.toString().trim().isNotEmpty).join(', ');
+      } else {
+        uAddrStr = uAddrObj?.toString() ?? '';
+      }
+
+      final sAddrObj = shopData['address'];
+      double? sLat;
+      double? sLng;
+      String sAddrStr = '';
+
+      if (shopData['latitude'] != null) sLat = double.tryParse(shopData['latitude'].toString());
+      if (shopData['longitude'] != null) sLng = double.tryParse(shopData['longitude'].toString());
+      
+      if (sAddrObj is Map) {
+        if (sLat == null && sAddrObj['lat'] != null) sLat = double.tryParse(sAddrObj['lat'].toString());
+        if (sLng == null && sAddrObj['lng'] != null) sLng = double.tryParse(sAddrObj['lng'].toString());
+        final parts = [sAddrObj['addressLine1'], sAddrObj['line1'], sAddrObj['addressLine2'], sAddrObj['line2'], sAddrObj['city'], sAddrObj['state'], sAddrObj['pincode']];
+        sAddrStr = parts.where((e) => e != null && e.toString().trim().isNotEmpty).join(', ');
+      } else {
+        sAddrStr = sAddrObj?.toString() ?? '';
+      }
+
+      final borzoService = BorzoService();
+      final response = await borzoService.createOrder(
+        userAddress: uAddrStr,
+        userLat: uLat,
+        userLng: uLng,
+        userName: (d['customerName'] ?? d['name'] ?? d['yourName'] ?? 'Customer').toString(),
+        userPhone: (d['phone'] ?? '').toString(),
+        shopAddress: sAddrStr,
+        shopLat: sLat,
+        shopLng: sLng,
+        shopName: (shopData['shopName'] ?? 'Shop').toString(),
+        shopPhone: (shopData['phone'] ?? '').toString(),
+        requestId: widget.requestId,
+        shopId: widget.shopUid,
+        isReverseDrop: true,
+      );
+
+      final orderData = response['order'] ?? {};
+      final reverseOrderId = orderData['order_id'];
+      final reverseStatus = orderData['status'];
+      
+      String? reverseTrackingUrl;
+      if (orderData['points'] != null && (orderData['points'] as List).isNotEmpty) {
+         reverseTrackingUrl = orderData['points'][0]['tracking_url']?.toString();
+      }
+
+      await FirebaseFirestore.instance
+          .collection('shop_users')
+          .doc(widget.shopUid)
+          .collection('requests')
+          .doc(widget.requestId)
+          .set({
+            'reverseDropScheduled': true,
+            if (reverseOrderId != null) 'reverseBorzoOrderId': reverseOrderId,
+            if (reverseStatus != null) 'reverseBorzoStatus': reverseStatus,
+            if (reverseTrackingUrl != null) 'reverseBorzoTrackingUrl': reverseTrackingUrl,
+          }, SetOptions(merge: true));
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Reverse drop scheduled successfully!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error scheduling reverse drop: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSchedulingReverseDrop = false;
+        });
+      }
+    }
+  }
 
   Future<void> _updateStatus(String newStatus, {String? amount}) async {
     try {
@@ -146,6 +281,15 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     // Service Details
     final serviceData = d['serviceDetails'] as Map<String, dynamic>?;
 
+    double baseAmount = 0;
+    if (serviceData != null && serviceData['totalCost'] != null) {
+      baseAmount = double.tryParse(serviceData['totalCost'].toString()) ?? 0;
+    } else {
+      baseAmount = double.tryParse(d['amount']?.toString() ?? '0') ?? 0;
+    }
+    double deliveryCost = double.tryParse(d['borzoDeliveryCost']?.toString() ?? '0') ?? 0;
+    double totalAmount = baseAmount + deliveryCost;
+
     // Timestamp handling
     String createdAtStr = '';
     if (d['createdAt'] != null) {
@@ -237,11 +381,11 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                         color: priority.toLowerCase() == 'high' ? Colors.red : Colors.orange[800],
                       ),
                     ),
-                    if (d['amount'] != null && d['amount'].toString().isNotEmpty)
+                    if (totalAmount > 0)
                       Chip(
                         avatar: const Icon(Icons.currency_rupee, size: 16, color: Colors.green),
                         label: Text(
-                          '${d['amount']}',
+                          totalAmount.toStringAsFixed(0),
                           style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
                         ),
                         backgroundColor: Colors.green[50],
@@ -311,10 +455,29 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('Total Cost:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                            const Text('Service Cost:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                             Text('₹${serviceData['totalCost'] ?? 0}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary)),
                           ],
                         ),
+                        if (deliveryCost > 0) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text('Courier Transfer:', style: TextStyle(color: Colors.grey[700])),
+                              Text('₹${deliveryCost.toStringAsFixed(0)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          const Divider(),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Grand Total:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              Text('₹${totalAmount.toStringAsFixed(0)}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.green)),
+                            ],
+                          ),
+                        ],
                         if (serviceData['warranty'] != null && serviceData['warranty'].toString().isNotEmpty) ...[
                           const SizedBox(height: 12),
                           Row(
@@ -408,34 +571,102 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
       return Column(
         children: [
           if (status.toLowerCase() == 'in_progress') ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.blue[200]!),
-              ),
-              child: Column(
-                children: const [
-                  Icon(Icons.inventory_2_outlined, size: 40, color: Colors.blue),
-                  SizedBox(height: 8),
-                  Text(
-                    'Awaiting Product Drop-off',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
+            Builder(
+              builder: (context) {
+                final trackingUrl = d['borzoTrackingUrl'];
+                final trackStatus = d['borzoStatus'] ?? 'ON THE WAY';
+                final borzoOrderId = d['borzoOrderId']?.toString();
+                final hasCourier = trackingUrl != null && trackingUrl.toString().trim().isNotEmpty;
+                
+                return Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue[200]!),
                   ),
-                  SizedBox(height: 4),
-                  Text(
-                    'The customer has been prompted to drop off or courier their device to your shop.',
-                    style: TextStyle(color: Colors.blue),
-                    textAlign: TextAlign.center,
+                  child: Column(
+                    children: [
+                      const Icon(Icons.inventory_2_outlined, size: 40, color: Colors.blue),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Awaiting Product Drop-off',
+                        style: TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        hasCourier 
+                            ? 'The customer has dispatched their device via Borzo courier.'
+                            : 'The customer has been prompted to drop off their device to your shop manually.',
+                        style: const TextStyle(color: Colors.blue),
+                        textAlign: TextAlign.center,
+                      ),
+                      if (hasCourier) ...[
+                        const SizedBox(height: 12),
+                        if (borzoOrderId != null && borzoOrderId.isNotEmpty) ...[
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.tag, size: 14, color: Colors.blue[700]),
+                              const SizedBox(width: 4),
+                              Text(
+                                'Order ID: ',
+                                style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                              ),
+                              SelectableText(
+                                borzoOrderId,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue[900]),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.blue[100],
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'Status: ${trackStatus.toString().toUpperCase()}',
+                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton.icon(
+                          onPressed: () async {
+                            final url = Uri.parse(trackingUrl.toString());
+                            if (await canLaunchUrl(url)) {
+                              await launchUrl(url, mode: LaunchMode.externalApplication);
+                            } else {
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Could not launch tracking URL')),
+                                );
+                              }
+                            }
+                          },
+                          icon: const Icon(Icons.location_on, color: Colors.blue),
+                          label: const Text('Track Customer Delivery', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.blue,
+                            elevation: 0,
+                            side: BorderSide(color: Colors.blue[300]!),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
-                ],
-              ),
+                );
+              }
             ),
             const SizedBox(height: 16),
           ],
@@ -526,66 +757,177 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
           ],
         ),
       );
-    } else if (status.toLowerCase() == 'payment_on_delivery') {
-      return Column(
-        children: [
-          Container(
+    } else if (status.toLowerCase() == 'payment_done') {
+      final hasBorzo = d['borzoOrderId'] != null || d['borzoTrackingUrl'] != null;
+      final reverseScheduled = d['reverseDropScheduled'] == true;
+      if (hasBorzo) {
+        if (reverseScheduled) {
+          final reverseTrackingUrl = d['reverseBorzoTrackingUrl'];
+          final reverseStatus = d['reverseBorzoStatus'] ?? 'Scheduled';
+          final reverseBorzoOrderId = d['reverseBorzoOrderId']?.toString();
+
+          return Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.blue[50],
+              color: Colors.green[50],
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue[200]!),
+              border: Border.all(color: Colors.green[200]!),
             ),
             child: Column(
-              children: const [
-                Icon(Icons.handshake, size: 40, color: Colors.blue),
-                SizedBox(height: 8),
-                Text(
-                  'Payment on Delivery',
+              children: [
+                const Icon(Icons.check_circle_outline, size: 40, color: Colors.green),
+                const SizedBox(height: 8),
+                const Text(
+                  'Reverse Pickup Success',
                   style: TextStyle(
-                    color: Colors.blue,
+                    color: Colors.green,
                     fontWeight: FontWeight.bold,
                     fontSize: 18,
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  'User will pay while accepting device',
-                  style: TextStyle(color: Colors.blue),
+                const SizedBox(height: 4),
+                const Text(
+                  'The reverse pickup has been successfully scheduled.',
+                  style: TextStyle(color: Colors.green),
+                  textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 12),
+                if (reverseBorzoOrderId != null && reverseBorzoOrderId.isNotEmpty) ...[
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.tag, size: 14, color: Colors.green[700]),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Order ID: ',
+                        style: TextStyle(fontSize: 13, color: Colors.green[700]),
+                      ),
+                      SelectableText(
+                        reverseBorzoOrderId,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green[900]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green[100],
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    'Status: ${reverseStatus.toString().toUpperCase()}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green),
+                  ),
+                ),
+
+                if (reverseTrackingUrl != null && reverseTrackingUrl.toString().trim().isNotEmpty) ...[
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final url = Uri.parse(reverseTrackingUrl.toString());
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not launch URL')),
+                          );
+                        }
+                      }
+                    },
+                    icon: const Icon(Icons.location_on, color: Colors.green),
+                    label: const Text('Track Return Delivery', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: Colors.green,
+                      elevation: 0,
+                      side: BorderSide(color: Colors.green[300]!),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                  ),
+                ],
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          CheckboxListTile(
-            value: _paymentReceived,
-            onChanged: (val) {
-              setState(() {
-                _paymentReceived = val ?? false;
-              });
-            },
-            title: const Text("Payment Received from Customer"),
-            controlAffinity: ListTileControlAffinity.leading,
-            contentPadding: EdgeInsets.zero,
-          ),
-          const SizedBox(height: 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _paymentReceived ? () => _updateStatus('completed') : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF027A48), // Green
-                disabledBackgroundColor: Colors.grey[300],
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          );
+        }
+
+        return Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.blue[200]!),
               ),
-              child: const Text('Mark as Completed', style: TextStyle(fontSize: 16, color: Colors.white)),
+              child: Column(
+                children: const [
+                  Icon(Icons.local_shipping, size: 40, color: Colors.blue),
+                  SizedBox(height: 8),
+                  Text(
+                    'Payment Done',
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Device is ready. Please schedule a reverse drop.',
+                    style: TextStyle(color: Colors.blue),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      );
-    } else if (status.toLowerCase() == 'payment_done' || status.toLowerCase() == 'completed') {
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isSchedulingReverseDrop ? null : () => _scheduleReverseDrop(d),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: _isSchedulingReverseDrop 
+                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Text('Schedule Reverse Drop', style: TextStyle(fontSize: 16, color: Colors.white)),
+              ),
+            ),
+          ],
+        );
+      } else {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CheckboxListTile(
+              value: false,
+              onChanged: (val) {
+                if (val == true) {
+                  _updateStatus('completed');
+                }
+              },
+              title: const Text("Wait for customer to pick the product"),
+              subtitle: const Text("Click if customer picked up"),
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ],
+        );
+      }
+    } else if (status.toLowerCase() == 'completed') {
+       final reverseScheduled = d['reverseDropScheduled'] == true;
+       final reverseTrackingUrl = d['reverseBorzoTrackingUrl'];
+       final reverseStatus = d['reverseBorzoStatus'] ?? 'COMPLETED';
+       final reverseBorzoOrderId = d['reverseBorzoOrderId']?.toString();
+
        return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(16),
@@ -594,11 +936,64 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: Colors.green),
         ),
-        child: const Center(
-          child: Text(
-            'Service Completed',
-            style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18),
-          ),
+        child: Column(
+          children: [
+            const Icon(Icons.verified, size: 40, color: Colors.green),
+            const SizedBox(height: 8),
+            const Text(
+              'Service Completed',
+              style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+            if (reverseScheduled && reverseBorzoOrderId != null && reverseBorzoOrderId.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.tag, size: 14, color: Colors.green[800]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Return Order ID: ',
+                    style: TextStyle(fontSize: 13, color: Colors.green[800]),
+                  ),
+                  SelectableText(
+                    reverseBorzoOrderId,
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.green[900]),
+                  ),
+                ],
+              ),
+            ],
+            if (reverseScheduled && reverseTrackingUrl != null && reverseTrackingUrl.toString().trim().isNotEmpty) ...[
+              const SizedBox(height: 16),
+              const Divider(color: Colors.green),
+              const SizedBox(height: 12),
+              const Text('Return Delivery is active', style: TextStyle(color: Colors.green)),
+              const SizedBox(height: 8),
+              ElevatedButton.icon(
+                onPressed: () async {
+                  final url = Uri.parse(reverseTrackingUrl.toString());
+                  if (await canLaunchUrl(url)) {
+                    await launchUrl(url, mode: LaunchMode.externalApplication);
+                  } else {
+                     if (context.mounted) {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         const SnackBar(content: Text('Could not launch URL')),
+                       );
+                     }
+                  }
+                },
+                icon: const Icon(Icons.location_on, color: Colors.green),
+                label: const Text('Track Return Delivery', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.green,
+                  elevation: 0,
+                  side: BorderSide(color: Colors.green[500]!),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ],
         ),
       );
     }

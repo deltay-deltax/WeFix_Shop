@@ -35,7 +35,7 @@ class _TermsAndUse1ScreenState extends State<TermsAndUse1Screen> {
                   const SizedBox(height: 6),
                   Text(
                     'Last updated: 23 September 2025',
-                    style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                    style: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
                   ),
                   const SizedBox(height: 12),
                   Expanded(
@@ -93,8 +93,8 @@ These Terms shall be governed by and interpreted in accordance with the laws of 
 7. Contact Us
 
 If you have any questions about these Terms, please contact us at:
-📧 support@wefix.com
-📞 +91-XXXXXXXXXX''', style: TextStyle(fontSize: 15, height: 1.5)),
+📧 wefix.info25@gmail.com
+📞 +91 861 838 0961''', style: TextStyle(fontSize: 15, height: 1.5)),
                       ),
                     ),
                   ),
@@ -167,13 +167,14 @@ If you have any questions about these Terms, please contact us at:
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Text(
-                                'Terms and Conditions',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
+                              const Expanded(
+                                child: Text(
+                                  'Terms of Use',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.w700,
+                                  ),
                                 ),
                               ),
                               IconButton(
@@ -185,9 +186,9 @@ If you have any questions about these Terms, please contact us at:
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'I agree to the iOS, iCloud and Game Center Terms and Conditions and the Apple Privacy Policy.',
+                            'I agree to the Terms of Use and related service conditions.',
                             style: TextStyle(
-                              color: Colors.black.withOpacity(0.7),
+                              color: Colors.black.withValues(alpha: 0.7),
                             ),
                           ),
                           const SizedBox(height: 16),

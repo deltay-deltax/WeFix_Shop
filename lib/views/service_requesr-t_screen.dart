@@ -446,7 +446,18 @@ class _RequestsList extends StatelessWidget {
             final phone = (d['phone'] ?? 'No phone').toString();
             final address = (d['pickupAddress'] ?? d['address'] ?? 'No address')
                 .toString();
-            final amount = (d['amount'] ?? '').toString();
+
+            final serviceData = d['serviceDetails'] as Map<String, dynamic>?;
+            double baseAmount = 0;
+            if (serviceData != null && serviceData['totalCost'] != null) {
+              baseAmount = double.tryParse(serviceData['totalCost'].toString()) ?? 0;
+            } else {
+              baseAmount = double.tryParse(d['amount']?.toString() ?? '0') ?? 0;
+            }
+            double deliveryCost = double.tryParse(d['borzoDeliveryCost']?.toString() ?? '0') ?? 0;
+            double totalAmount = baseAmount + deliveryCost;
+            
+            final amount = totalAmount > 0 ? totalAmount.toStringAsFixed(0) : '';
 
             String customerName = (d['customerName'] ?? d['name'] ?? d['yourName'] ?? '')
                 .toString();

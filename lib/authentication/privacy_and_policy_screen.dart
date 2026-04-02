@@ -40,7 +40,7 @@ class _PrivacyAndPolicyState extends State<PrivacyAndPolicy> {
 
                   Text(
                     'Last updated: 23 September 2025',
-                    style: TextStyle(color: Colors.black.withOpacity(0.6)),
+                    style: TextStyle(color: Colors.black.withValues(alpha: 0.6)),
                   ),
 
                   const SizedBox(height: 12),
@@ -114,8 +114,8 @@ This Privacy Policy may be updated periodically. Your continued use of the App s
 8. Contact Us
 
 For any privacy-related concerns or grievances, please contact our Grievance Officer at:
-Email: support@wefix.com
-Phone: +91-XXXXXXXXXX
+Email:wefix.info25@gmail.com
+Phone: +91 861 838 0961
 ''', style: TextStyle(fontSize: 15, height: 1.5)),
                       ),
                     ),
@@ -195,7 +195,7 @@ Phone: +91-XXXXXXXXXX
                             children: [
                               const Expanded(
                                 child: Text(
-                                  'Terms and Conditions',
+                                  'Privacy Policy',
                                   style: TextStyle(
                                     fontSize: 20,
                                     fontWeight: FontWeight.w700,
@@ -215,7 +215,7 @@ Phone: +91-XXXXXXXXXX
                           Text(
                             'I agree to the Privacy Policy and related service conditions.',
                             style: TextStyle(
-                              color: Colors.black.withOpacity(0.7),
+                              color: Colors.black.withValues(alpha: 0.7),
                             ),
                           ),
 
