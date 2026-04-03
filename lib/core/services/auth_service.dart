@@ -8,6 +8,7 @@ class AuthService {
 
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
+  final _googleSignIn = GoogleSignIn();
 
   Future<UserCredential> signUpWithEmail({
     required String email,
@@ -53,7 +54,10 @@ class AuthService {
     bool requireExisting = false,
     String? expectedRole,
   }) async {
-    final googleUser = await GoogleSignIn().signIn();
+    // Force account picker by signing out first
+    await _googleSignIn.signOut().catchError((e) => null);
+    
+    final googleUser = await _googleSignIn.signIn();
     if (googleUser == null) {
       throw Exception('google_sign_in_canceled');
     }
@@ -93,10 +97,15 @@ class AuthService {
     await _ensureUserDoc(uid: uid, email: email, role: role, extra: extra);
   }
 
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    await _auth.sendPasswordResetEmail(email: email);
+  }
+
   Future<void> signOut() async {
     await _auth.signOut();
     try {
-      await GoogleSignIn().signOut();
+      await _googleSignIn.signOut();
+      await _googleSignIn.disconnect();
     } catch (_) {}
   }
 

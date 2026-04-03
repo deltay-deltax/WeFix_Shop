@@ -649,7 +649,7 @@ class _RequestCard extends StatelessWidget {
             const SizedBox(height: 12),
             _infoRow('Problem', problem),
             const SizedBox(height: 6),
-            _infoRow('Phone', phone),
+            _infoRow('Mobile', phone),
             const SizedBox(height: 6),
             _infoRow('Address', address),
             if (amount.isNotEmpty) ...[

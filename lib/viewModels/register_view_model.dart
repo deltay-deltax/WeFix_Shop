@@ -73,7 +73,7 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   bool verifyingPhone = false;
-  bool phoneVerified = false;
+  bool phoneVerified = true;
   bool submitting = false;
   String? error;
 
@@ -145,7 +145,7 @@ class RegisterViewModel extends ChangeNotifier {
     hasGstin = true;
     selectedCompanyType = null;
     verifyingPhone = false;
-    phoneVerified = false;
+    phoneVerified = true;
     submitting = false;
     error = null;
     uploadedPhotos.clear();
@@ -176,92 +176,9 @@ class RegisterViewModel extends ChangeNotifier {
   int? _resendToken;
 
   Future<void> verifyPhoneWithContext(BuildContext context) async {
-    final phone = phoneController.text.trim();
-    if (phone.isEmpty) {
-      error = 'Enter phone number';
-      notifyListeners();
-      return;
-    }
-    // Check if phone exists in DB before verifying
-    final normalized = phone.startsWith('+') ? phone : '+91 ${phone.trim()}';
-    try {
-      final existing = await FirebaseFirestore.instance
-          .collection('registered_shop_users')
-          .where('phone', isEqualTo: normalized)
-          .limit(1)
-          .get();
-      if (existing.docs.isNotEmpty) {
-        error = 'Phone number already exists';
-        notifyListeners();
-        return;
-      }
-    } catch (_) {
-      // continue to verify if lookup fails
-    }
-
-    verifyingPhone = true;
-    error = null;
+    // Verification disabled for now
+    phoneVerified = true;
     notifyListeners();
-
-    await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: normalized,
-      forceResendingToken: _resendToken,
-      verificationCompleted: (credential) async {
-        // Auto-retrieval or instant verification
-        try {
-          final user = FirebaseAuth.instance.currentUser;
-          if (user != null) {
-            await user.linkWithCredential(credential);
-          } else {
-            await FirebaseAuth.instance.signInWithCredential(credential);
-          }
-          phoneVerified = true;
-        } catch (e) {
-          error = e.toString();
-        } finally {
-          verifyingPhone = false;
-          notifyListeners();
-        }
-      },
-      verificationFailed: (e) {
-        error = e.message;
-        verifyingPhone = false;
-        notifyListeners();
-      },
-      codeSent: (verificationId, resendToken) async {
-        _verificationId = verificationId;
-        _resendToken = resendToken;
-        verifyingPhone = false;
-        notifyListeners();
-
-        final code = await Navigator.of(context).push<String>(
-          MaterialPageRoute(builder: (_) => EnterOTPScreen(phone: phone)),
-        );
-        if (code != null && code.length == 6 && _verificationId != null) {
-          try {
-            final credential = PhoneAuthProvider.credential(
-              verificationId: _verificationId!,
-              smsCode: code,
-            );
-            final user = FirebaseAuth.instance.currentUser;
-            if (user != null) {
-              await user.linkWithCredential(credential);
-            } else {
-              await FirebaseAuth.instance.signInWithCredential(credential);
-            }
-            phoneVerified = true;
-          } on FirebaseAuthException catch (e) {
-            error = e.message;
-          } finally {
-            notifyListeners();
-          }
-        }
-      },
-      codeAutoRetrievalTimeout: (verificationId) {
-        _verificationId = verificationId;
-      },
-      timeout: const Duration(seconds: 60),
-    );
   }
 
   Future<void> submit(BuildContext context) async {

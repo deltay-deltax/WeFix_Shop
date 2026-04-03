@@ -281,6 +281,11 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     // Service Details
     final serviceData = d['serviceDetails'] as Map<String, dynamic>?;
 
+    // Heavy Appliance Fields
+    final isHeavyAppliance = d['isHeavyAppliance'] == true;
+    String visitScheduledAt = _formatTimestamp(d['visitScheduledAt']);
+    final visitConfirmedByUser = d['visitConfirmedByUser'] == true;
+
     double baseAmount = 0;
     if (serviceData != null && serviceData['totalCost'] != null) {
       baseAmount = double.tryParse(serviceData['totalCost'].toString()) ?? 0;
@@ -291,14 +296,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     double totalAmount = baseAmount + deliveryCost;
 
     // Timestamp handling
-    String createdAtStr = '';
-    if (d['createdAt'] != null) {
-      if (d['createdAt'] is Timestamp) {
-        createdAtStr = (d['createdAt'] as Timestamp).toDate().toString().split('.')[0];
-      } else {
-        createdAtStr = d['createdAt'].toString();
-      }
-    }
+    String createdAtStr = _formatTimestamp(d['createdAt']);
 
     // Name handling
     String initialName = (d['customerName'] ?? d['name'] ?? d['yourName'] ?? '').toString();
@@ -363,7 +361,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                         ],
                       ),
                     ),
-                    _StatusChip(status: status),
+                    _StatusChip(status: status, isHeavyAppliance: isHeavyAppliance),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -515,7 +513,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                   ),
 
                 const SizedBox(height: 12),
-                _detailRow(Icons.phone, 'Phone', phone),
+                _detailRow(Icons.phone, 'Mobile', phone),
                 const SizedBox(height: 12),
                 _detailRow(Icons.location_on, 'Address', address),
                 if (createdAtStr.isNotEmpty) ...[
@@ -526,7 +524,14 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                 const SizedBox(height: 40),
 
                 // Action Buttons
-                _buildActionButtons(context, status, d),
+                _buildActionButtons(
+                  context,
+                  status,
+                  d,
+                  isHeavyAppliance: isHeavyAppliance,
+                  visitScheduledAt: visitScheduledAt,
+                  visitConfirmedByUser: visitConfirmedByUser,
+                ),
               ],
             ),
           ),
@@ -535,7 +540,14 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     );
   }
   
-  Widget _buildActionButtons(BuildContext context, String status, Map<String, dynamic> d) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    String status,
+    Map<String, dynamic> d, {
+    required bool isHeavyAppliance,
+    required String visitScheduledAt,
+    required bool visitConfirmedByUser,
+  }) {
     // Only show buttons if we have the needed context/data.
     // The previous implementation had this nested.
     
@@ -571,121 +583,198 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
       return Column(
         children: [
           if (status.toLowerCase() == 'in_progress') ...[
-            Builder(
-              builder: (context) {
-                final trackingUrl = d['borzoTrackingUrl'];
-                final trackStatus = d['borzoStatus'] ?? 'ON THE WAY';
-                final borzoOrderId = d['borzoOrderId']?.toString();
-                final hasCourier = trackingUrl != null && trackingUrl.toString().trim().isNotEmpty;
-                
-                return Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.blue[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.blue[200]!),
-                  ),
-                  child: Column(
-                    children: [
-                      const Icon(Icons.inventory_2_outlined, size: 40, color: Colors.blue),
-                      const SizedBox(height: 8),
+            if (isHeavyAppliance) ...[
+              // Home Visit UI for Heavy Appliances
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.blue[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.blue[200]!),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.home_work_outlined, size: 40, color: Colors.blue),
+                    const SizedBox(height: 8),
+                    Text(
+                      visitConfirmedByUser ? 'Home Visit Confirmed' : 'Home Visit Scheduled',
+                      style: const TextStyle(
+                        color: Colors.blue,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    if (visitScheduledAt.isNotEmpty) ...[
                       const Text(
-                        'Awaiting Product Drop-off',
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
+                        'User\'s Preferred Timings:',
+                        style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        hasCourier 
-                            ? 'The customer has dispatched their device via Borzo courier.'
-                            : 'The customer has been prompted to drop off their device to your shop manually.',
+                        visitScheduledAt,
                         style: const TextStyle(color: Colors.blue),
                         textAlign: TextAlign.center,
                       ),
-                      if (hasCourier) ...[
-                        const SizedBox(height: 12),
-                        if (borzoOrderId != null && borzoOrderId.isNotEmpty) ...[
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.tag, size: 14, color: Colors.blue[700]),
-                              const SizedBox(width: 4),
-                              Text(
-                                'Order ID: ',
-                                style: TextStyle(fontSize: 13, color: Colors.blue[700]),
-                              ),
-                              SelectableText(
-                                borzoOrderId,
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue[900]),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                        ],
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.blue[100],
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            'Status: ${trackStatus.toString().toUpperCase()}',
-                            style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          onPressed: () async {
-                            final url = Uri.parse(trackingUrl.toString());
-                            if (await canLaunchUrl(url)) {
-                              await launchUrl(url, mode: LaunchMode.externalApplication);
-                            } else {
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Could not launch tracking URL')),
-                                );
-                              }
-                            }
-                          },
-                          icon: const Icon(Icons.location_on, color: Colors.blue),
-                          label: const Text('Track Customer Delivery', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.blue,
-                            elevation: 0,
-                            side: BorderSide(color: Colors.blue[300]!),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          ),
-                        ),
-                      ],
+                    ] else ...[
+                      const Text(
+                        'The customer will schedule a visit time soon.',
+                        style: TextStyle(color: Colors.blue),
+                        textAlign: TextAlign.center,
+                      ),
                     ],
-                  ),
-                );
-              }
-            ),
-            const SizedBox(height: 16),
-          ],
-          if (status.toLowerCase() == 'in_progress') ...[
-            CheckboxListTile(
-              value: false, // It's only shown when false (in_progress)
-              onChanged: (val) {
-                if (val == true) {
-                  _updateStatus('in_service');
-                }
-              },
-              title: const Text(
-                "Product Received from Customer",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                    if (visitConfirmedByUser) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.blue[100],
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Text(
+                          'READY FOR SERVICE',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-              activeColor: AppColors.primary,
-            ),
+              const SizedBox(height: 16),
+              // Service Started Checkbox
+              CheckboxListTile(
+                value: false,
+                onChanged: (val) {
+                  if (val == true) {
+                    _updateStatus('in_service');
+                  }
+                },
+                title: const Text(
+                  "Service Started",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text("Tick once technician starts work"),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+              ),
+            ] else ...[
+              // Courier/Borzo UI for normal devices
+              Builder(
+                builder: (context) {
+                  final trackingUrl = d['borzoTrackingUrl'];
+                  final trackStatus = d['borzoStatus'] ?? 'ON THE WAY';
+                  final borzoOrderId = d['borzoOrderId']?.toString();
+                  final hasCourier = trackingUrl != null && trackingUrl.toString().trim().isNotEmpty;
+                  
+                  return Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue[50],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue[200]!),
+                    ),
+                    child: Column(
+                      children: [
+                        const Icon(Icons.inventory_2_outlined, size: 40, color: Colors.blue),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Awaiting Product Drop-off',
+                          style: TextStyle(
+                            color: Colors.blue,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          hasCourier 
+                              ? 'The customer has dispatched their device via Borzo courier.'
+                              : 'The customer has been prompted to drop off their device to your shop manually.',
+                          style: const TextStyle(color: Colors.blue),
+                          textAlign: TextAlign.center,
+                        ),
+                        if (hasCourier) ...[
+                          const SizedBox(height: 12),
+                          if (borzoOrderId != null && borzoOrderId.isNotEmpty) ...[
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.tag, size: 14, color: Colors.blue[700]),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Order ID: ',
+                                  style: TextStyle(fontSize: 13, color: Colors.blue[700]),
+                                ),
+                                SelectableText(
+                                  borzoOrderId,
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.blue[900]),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue[100],
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              'Status: ${trackStatus.toString().toUpperCase()}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              final url = Uri.parse(trackingUrl.toString());
+                              if (await canLaunchUrl(url)) {
+                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                              } else {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Could not launch tracking URL')),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.location_on, color: Colors.blue),
+                            label: const Text('Track Customer Delivery', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.blue,
+                              elevation: 0,
+                              side: BorderSide(color: Colors.blue[300]!),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  );
+                }
+              ),
+              const SizedBox(height: 16),
+              CheckboxListTile(
+                value: false, // It's only shown when false (in_progress)
+                onChanged: (val) {
+                  if (val == true) {
+                    _updateStatus('in_service');
+                  }
+                },
+                title: const Text(
+                  "Product Received from Customer",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppColors.primary,
+              ),
+            ],
             const SizedBox(height: 16),
           ],
           if (status.toLowerCase() == 'in_service' || status.toLowerCase() == 'confirm') ...[
@@ -914,8 +1003,8 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                   _updateStatus('completed');
                 }
               },
-              title: const Text("Wait for customer to pick the product"),
-              subtitle: const Text("Click if customer picked up"),
+              title: Text(isHeavyAppliance ? "Service Completed" : "Wait for customer to pick the product"),
+              subtitle: Text(isHeavyAppliance ? "Tick once work is finished" : "Click if customer picked up"),
               controlAffinity: ListTileControlAffinity.leading,
               contentPadding: EdgeInsets.zero,
             ),
@@ -1000,6 +1089,41 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     return const SizedBox.shrink();
   }
 
+  String _formatTimestamp(dynamic ts) {
+    if (ts == null) return '';
+    
+    DateTime? dt;
+    if (ts is Timestamp) {
+      dt = ts.toDate();
+    } else if (ts is Map) {
+      final seconds = ts['_seconds'] ?? ts['seconds'];
+      final nanos = ts['_nanoseconds'] ?? ts['nanoseconds'] ?? 0;
+      if (seconds != null) {
+        dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000 + (nanos / 1000000).round());
+      }
+    } else if (ts is String) {
+      // Handle the literal "Timestamp(seconds=..., nanoseconds=...)" string
+      if (ts.startsWith('Timestamp(')) {
+        final reg = RegExp(r'seconds=(\d+)');
+        final match = reg.firstMatch(ts);
+        if (match != null) {
+          final seconds = int.tryParse(match.group(1) ?? '');
+          if (seconds != null) {
+            dt = DateTime.fromMillisecondsSinceEpoch(seconds * 1000);
+          }
+        }
+      } else {
+        dt = DateTime.tryParse(ts);
+      }
+    }
+
+    if (dt != null) {
+      // Basic formatting YYYY-MM-DD HH:MM:SS
+      return dt.toString().split('.')[0];
+    }
+    return ts.toString();
+  }
+
   Widget _detailRow(IconData icon, String label, String value) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1023,7 +1147,8 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
 
 class _StatusChip extends StatelessWidget {
   final String status;
-  const _StatusChip({required this.status});
+  final bool isHeavyAppliance;
+  const _StatusChip({required this.status, this.isHeavyAppliance = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1048,6 +1173,11 @@ class _StatusChip extends StatelessWidget {
       text = const Color(0xFFB54708);
     }
 
+    String label = status.toUpperCase().replaceAll('_', ' ');
+    if (s == 'in_progress') {
+      label = isHeavyAppliance ? 'HOME VISIT' : 'AWAITING DROP-OFF';
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -1055,7 +1185,7 @@ class _StatusChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
-        s == 'in_progress' ? 'AWAITING DROP-OFF' : status.toUpperCase().replaceAll('_', ' '),
+        label,
         style: TextStyle(
           color: text,
           fontSize: 12,

@@ -1,4 +1,6 @@
 // add_service_view_model.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:wefix_shop/data/models/new_service_model.dart';
 
 class AddServiceViewModel {
@@ -22,5 +24,37 @@ class AddServiceViewModel {
         service.amount > 0;
   }
 
-  // Add your save service logic here if needed
+  Future<void> saveBulkServices(
+      String shopCategory, Map<String, double> subcategoryAmounts) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) throw Exception("User not logged in");
+
+    final batch = FirebaseFirestore.instance.batch();
+    final servicesRef = FirebaseFirestore.instance
+        .collection('shop_users')
+        .doc(uid)
+        .collection('services');
+
+    for (var entry in subcategoryAmounts.entries) {
+      if (entry.value > 0) {
+        // Use a deterministic ID based on the subcategory name to allow updating
+        final docId =
+            entry.key.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_').toLowerCase();
+
+        batch.set(
+          servicesRef.doc(docId),
+          {
+            'name': entry.key,
+            'description': entry.key,
+            'category': shopCategory,
+            'amount': entry.value,
+            'updatedAt': FieldValue.serverTimestamp(),
+            'active': true,
+          },
+          SetOptions(merge: true),
+        );
+      }
+    }
+    await batch.commit();
+  }
 }

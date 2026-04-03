@@ -21,6 +21,37 @@ class _ChatScreenState extends State<ChatScreen> {
   final FocusNode _focusNode = FocusNode();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _markRead();
+    });
+  }
+
+  void _markRead() async {
+    final routeArgs = ModalRoute.of(context)?.settings.arguments;
+    String? chatId;
+    if (routeArgs is Map) {
+      chatId = (routeArgs['chatId'] ?? '') as String?;
+    } else if (routeArgs is String) {
+      chatId = routeArgs;
+    }
+    if (chatId == null) return;
+    final myUid = FirebaseAuth.instance.currentUser?.uid;
+
+    final doc =
+        await FirebaseFirestore.instance.collection('chats').doc(chatId).get();
+    if (doc.exists) {
+      final data = doc.data()!;
+      if (data['lastMessageSenderId'] != myUid) {
+        await FirebaseFirestore.instance.collection('chats').doc(chatId).update({
+          'isRead': true,
+        });
+      }
+    }
+  }
+
+  @override
   void dispose() {
     msgCtrl.dispose();
     _focusNode.dispose();
@@ -286,6 +317,8 @@ class _ChatScreenState extends State<ChatScreen> {
                                     'lastMessage': text,
                                     'lastMessageAt':
                                         FieldValue.serverTimestamp(),
+                                    'lastMessageSenderId': myUid,
+                                    'isRead': false,
                                   }, SetOptions(merge: true));
 
                               msgCtrl.clear();
@@ -336,6 +369,8 @@ class _ChatScreenState extends State<ChatScreen> {
     await FirebaseFirestore.instance.collection('chats').doc(chatId).set({
       'lastMessage': '[image]',
       'lastMessageAt': FieldValue.serverTimestamp(),
+      'lastMessageSenderId': myUid,
+      'isRead': false,
     }, SetOptions(merge: true));
   }
 }

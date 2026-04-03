@@ -96,7 +96,7 @@ class ProfileScreen extends StatelessWidget {
                         keyboard: TextInputType.number,
                       ),
                       _field(
-                        'Phone',
+                        'Mobile',
                         vm.phone,
                         vm.editing,
                         keyboard: TextInputType.phone,

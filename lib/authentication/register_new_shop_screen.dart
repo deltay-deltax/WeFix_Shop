@@ -35,7 +35,7 @@ class RegisterNewShopScreen extends StatelessWidget {
   ];
 
   static const List<String> _kComputerSubs = [
-    'Phone',
+    'Mobile',
     'Laptop',
     'Desktop CPU',
     'Monitor',
@@ -280,7 +280,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                           keyboardType: TextInputType.url,
                         ),
                         const SizedBox(height: 12),
-                        _label('Phone Number*'),
+                        _label('Mobile Number*'),
                         Row(
                           children: [
                             Expanded(
@@ -288,7 +288,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                                 controller: vm.phoneController,
                                 keyboardType: TextInputType.phone,
                                 decoration: InputDecoration(
-                                  hintText: 'Enter phone number',
+                                  hintText: 'Enter mobile number',
                                   prefixText: '+91 ',
                                   filled: true,
                                   fillColor: Colors.white,
@@ -306,21 +306,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                             const SizedBox(width: 8),
                           ],
                         ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: (vm.verifyingPhone || vm.phoneVerified)
-                                ? null
-                                : () => vm.verifyPhoneWithContext(context),
-                            child: Text(
-                              vm.phoneVerified
-                                  ? 'Verified'
-                                  : (vm.verifyingPhone
-                                        ? 'Verifying...'
-                                        : 'Verify Phone Number'),
-                            ),
-                          ),
-                        ),
+                        const SizedBox(height: 12),
 
                         const SizedBox(height: 8),
 

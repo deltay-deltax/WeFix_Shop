@@ -60,7 +60,7 @@ class ServiceRequestCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text('Problem: ${request.problem}'),
-            Text('Phone: ${request.phone}'),
+            Text('Mobile: ${request.phone}'),
             Text('Address: ${request.address} - ${request.date}'),
             const SizedBox(height: 10),
             Wrap(

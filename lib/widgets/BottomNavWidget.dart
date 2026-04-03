@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class BottomNavWidget extends StatelessWidget {
   final int currentIndex;
@@ -44,12 +46,37 @@ class BottomNavWidget extends StatelessWidget {
                 isSelected: currentIndex == 1,
                 onTap: () => onTap(1),
               ),
-              _NavItem(
-                icon: Icons.chat_bubble_rounded,
-                outlinedIcon: Icons.chat_bubble_outline,
-                label: 'Chat',
-                isSelected: currentIndex == 2,
-                onTap: () => onTap(2),
+              StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                stream: FirebaseAuth.instance.currentUser?.uid == null
+                    ? const Stream.empty()
+                    : FirebaseFirestore.instance
+                        .collection('chats')
+                        .where('participants', arrayContains: FirebaseAuth.instance.currentUser!.uid)
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  bool hasUnread = false;
+                  if (snapshot.hasData) {
+                    final myUid = FirebaseAuth.instance.currentUser?.uid;
+                    for (var doc in snapshot.data!.docs) {
+                      final data = doc.data();
+                      final isRead = (data['isRead'] ?? true) as bool;
+                      final lastSenderId = (data['lastMessageSenderId'] ?? '') as String;
+                      if (!isRead && lastSenderId != myUid) {
+                        hasUnread = true;
+                        break;
+                      }
+                    }
+                  }
+
+                  return _NavItem(
+                    icon: Icons.chat_bubble_rounded,
+                    outlinedIcon: Icons.chat_bubble_outline,
+                    label: 'Chat',
+                    isSelected: currentIndex == 2,
+                    showBadge: hasUnread,
+                    onTap: () => onTap(2),
+                  );
+                },
               ),
             ],
           ),
@@ -64,6 +91,7 @@ class _NavItem extends StatelessWidget {
   final IconData outlinedIcon;
   final String label;
   final bool isSelected;
+  final bool showBadge;
   final VoidCallback onTap;
 
   const _NavItem({
@@ -71,6 +99,7 @@ class _NavItem extends StatelessWidget {
     required this.outlinedIcon,
     required this.label,
     required this.isSelected,
+    this.showBadge = false,
     required this.onTap,
   });
 
@@ -99,10 +128,29 @@ class _NavItem extends StatelessWidget {
               scale: isSelected ? 1.1 : 1.0,
               duration: const Duration(milliseconds: 250),
               curve: Curves.easeInOut,
-              child: Icon(
-                isSelected ? icon : outlinedIcon,
-                color: isSelected ? primaryColor : unselectedColor,
-                size: 26,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Icon(
+                    isSelected ? icon : outlinedIcon,
+                    color: isSelected ? primaryColor : unselectedColor,
+                    size: 26,
+                  ),
+                  if (showBadge)
+                    Positioned(
+                      right: -2,
+                      top: -2,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             AnimatedSize(

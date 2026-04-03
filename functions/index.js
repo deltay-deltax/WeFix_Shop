@@ -32,6 +32,9 @@ exports.onRequestStatusChangedShop = functions.firestore
         const statusBefore = dataBefore.status;
         const statusAfter = dataAfter.status;
         const amount = dataAfter.amount || "";
+        const isHeavyAppliance = dataAfter.isHeavyAppliance === true;
+        const visitScheduledAt = dataAfter.visitScheduledAt || "";
+        const visitConfirmedByUser = dataAfter.visitConfirmedByUser === true;
 
         // Only act on actual status changes
         if (statusBefore === statusAfter) return null;
@@ -57,12 +60,27 @@ exports.onRequestStatusChangedShop = functions.firestore
                 body = `${customerName} has submitted a new service request. Open the app to review and respond.`;
                 break;
             case "in_progress":
-                title = "Service Request in Progress ";
-                body = `${customerName} has accepted the Service. Please Wait until they drop/Courier the product.`;
+                if (isHeavyAppliance) {
+                    title = "Home Visit Scheduled 🏠";
+                    let timeStr = visitScheduledAt;
+                    if (visitScheduledAt && typeof visitScheduledAt.toDate === "function") {
+                        const d = visitScheduledAt.toDate();
+                        timeStr = `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()} ${d.getHours()}:${d.getMinutes().toString().padStart(2, "0")}`;
+                    }
+                    body = `${customerName} has ${visitConfirmedByUser ? "confirmed" : "requested"} a visit for ${timeStr}.`;
+                } else {
+                    title = "Service Request in Progress ";
+                    body = `${customerName} has accepted the Service. Please Wait until they drop/Courier the product.`;
+                }
                 break;
             case "in_service":
-                title = "Start Service";
-                body = `${customerName} has dropped  the Product. Please start the repair process.`;
+                if (isHeavyAppliance) {
+                    title = "Home Visit Started 🛠️";
+                    body = `Home visit in progress. Service has been started for ${customerName}'s appliance.`;
+                } else {
+                    title = "Start Service";
+                    body = `${customerName} has dropped the Product. Please start the repair process.`;
+                }
                 break;
 
             case "payment_done":

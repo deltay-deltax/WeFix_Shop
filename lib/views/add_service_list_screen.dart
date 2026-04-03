@@ -52,11 +52,87 @@ class AddServiceListScreen extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                trailing: Text('₹ $amount'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('₹ $amount', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.edit, size: 20, color: Colors.blue),
+                      onPressed: () => _updatePriceDialog(context, user.uid, docs[i].id, name, amount),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, size: 20, color: Colors.red),
+                      onPressed: () => _deleteService(context, user.uid, docs[i].id),
+                    ),
+                  ],
+                ),
               );
             },
           );
         },
+      ),
+    );
+  }
+
+  void _updatePriceDialog(BuildContext context, String uid, String docId, String name, String currentAmount) {
+    final TextEditingController controller = TextEditingController(text: currentAmount);
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text('Edit Price: $name'),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            prefixText: '₹ ',
+            labelText: 'New Price',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              final newAmt = double.tryParse(controller.text) ?? 0.0;
+              if (newAmt <= 0) return;
+              await FirebaseFirestore.instance
+                  .collection('shop_users')
+                  .doc(uid)
+                  .collection('services')
+                  .doc(docId)
+                  .update({'amount': newAmt, 'updatedAt': FieldValue.serverTimestamp()});
+              if (context.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteService(BuildContext context, String uid, String docId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Delete Service?'),
+        content: const Text('This action cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+            onPressed: () async {
+              await FirebaseFirestore.instance
+                  .collection('shop_users')
+                  .doc(uid)
+                  .collection('services')
+                  .doc(docId)
+                  .delete();
+              if (context.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

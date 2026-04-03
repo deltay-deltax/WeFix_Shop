@@ -144,12 +144,17 @@ class ChatUsersScreen extends StatelessWidget {
                             final name = userName.toString();
                             final avatar = img ?? userAvatar;
 
+                            final isRead = (d['isRead'] ?? true) as bool;
+                            final lastSenderId = (d['lastMessageSenderId'] ?? '') as String;
+                            final showUnread = !isRead && lastSenderId != myUid;
+
                             return _buildModernChatTile(
                               context,
                               chatId,
                               name,
                               avatar,
                               last,
+                              showUnread,
                             );
                           }
 
@@ -172,14 +177,23 @@ class ChatUsersScreen extends StatelessWidget {
                                 final name = shopName.toString();
                                 final avatar = img ?? shopAvatar;
 
+                                final isRead = (d['isRead'] ?? true) as bool;
+                                final lastSenderId = (d['lastMessageSenderId'] ?? '') as String;
+                                final showUnread = !isRead && lastSenderId != myUid;
+
                                 return _buildModernChatTile(
                                   context,
                                   chatId,
                                   name,
                                   avatar,
                                   last,
+                                  showUnread,
                                 );
                               }
+
+                              final isRead = (d['isRead'] ?? true) as bool;
+                              final lastSenderId = (d['lastMessageSenderId'] ?? '') as String;
+                              final showUnread = !isRead && lastSenderId != myUid;
 
                               return _buildModernChatTile(
                                 context,
@@ -187,6 +201,7 @@ class ChatUsersScreen extends StatelessWidget {
                                 'Unknown',
                                 null,
                                 last,
+                                showUnread,
                               );
                             },
                           );
@@ -222,6 +237,7 @@ class ChatUsersScreen extends StatelessWidget {
     String name,
     dynamic avatar,
     String last,
+    bool showUnread,
   ) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -264,26 +280,44 @@ class ChatUsersScreen extends StatelessWidget {
                     ),
                   ),
                   padding: const EdgeInsets.all(2.5),
-                  child: CircleAvatar(
-                    radius: 28,
-                    backgroundColor: Colors.grey.shade100,
-                    backgroundImage: (avatar is String && avatar.isNotEmpty)
-                        ? NetworkImage(avatar)
-                        : null,
-                    child:
-                        (avatar == null || (avatar is String && avatar.isEmpty))
-                        ? Text(
-                            name.isNotEmpty
-                                ? name.substring(0, 1).toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.primary,
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.grey.shade100,
+                          backgroundImage: (avatar is String && avatar.isNotEmpty)
+                              ? NetworkImage(avatar)
+                              : null,
+                          child:
+                              (avatar == null || (avatar is String && avatar.isEmpty))
+                              ? Text(
+                                  name.isNotEmpty
+                                      ? name.substring(0, 1).toUpperCase()
+                                      : '?',
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        if (showUnread)
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 14,
+                              height: 14,
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
                             ),
-                          )
-                        : null,
-                  ),
+                          ),
+                      ],
+                    ),
                 ),
                 const SizedBox(width: 16),
 
