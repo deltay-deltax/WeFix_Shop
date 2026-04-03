@@ -273,7 +273,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                               'Tell customers about your shop, specialties, experience, etc.',
                         ),
                         const SizedBox(height: 8),
-                        _label('Shop Google Maps URL '),
+                        _label('Shop Google Maps URL*'),
                         _roundedField(
                           controller: vm.gmapUrlController,
                           hint: 'Paste your shop Google Maps URL',

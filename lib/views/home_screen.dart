@@ -566,20 +566,23 @@ class _EarningsSection extends StatelessWidget {
             final data = doc.data();
             final serviceDetails =
                 data['serviceDetails'] as Map<String, dynamic>?;
-            final totalCost =
+            final serviceValue =
                 double.tryParse(
                   serviceDetails?['totalCost']?.toString() ?? '0',
                 ) ??
                 0.0;
 
-            totalEarning += totalCost;
+            // Apply 20% commission deduction (Shop keep 80%)
+            final actualEarning = serviceValue * 0.8;
+
+            totalEarning += actualEarning;
 
             // Calculate monthly earning
             if (data['createdAt'] != null && data['createdAt'] is Timestamp) {
               final createdDate = (data['createdAt'] as Timestamp).toDate();
               if (createdDate.year == now.year &&
                   createdDate.month == now.month) {
-                monthlyEarning += totalCost;
+                monthlyEarning += actualEarning;
               }
             }
           }

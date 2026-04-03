@@ -185,6 +185,10 @@ class RegisterViewModel extends ChangeNotifier {
     try {
       submitting = true;
       notifyListeners();
+      if (gmapUrlController.text.trim().isEmpty) {
+        error = 'Please provide your Shop Google Maps URL.';
+        return;
+      }
       if (!phoneVerified) {
         error = 'Please verify your phone number before submitting.';
         return;

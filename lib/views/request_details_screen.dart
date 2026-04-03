@@ -993,22 +993,76 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
           ],
         );
       } else {
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CheckboxListTile(
-              value: false,
-              onChanged: (val) {
-                if (val == true) {
-                  _updateStatus('completed');
-                }
-              },
-              title: Text(isHeavyAppliance ? "Service Completed" : "Wait for customer to pick the product"),
-              subtitle: Text(isHeavyAppliance ? "Tick once work is finished" : "Click if customer picked up"),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-            ),
-          ],
+        return Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF0FDF4), // Light Green
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFBBF7D0), width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFDCFCE7),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  isHeavyAppliance ? Icons.task_alt_rounded : Icons.store_rounded,
+                  size: 40,
+                  color: const Color(0xFF16A34A),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                isHeavyAppliance ? 'Work Finalized' : 'Ready for Customer',
+                style: const TextStyle(
+                  color: Color(0xFF15803D),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                isHeavyAppliance
+                    ? 'Payment received! Finalize the request to move it to history.'
+                    : 'The device is repaired and paid for. Waiting for the customer to arrive for pickup.',
+                style: const TextStyle(color: Color(0xFF166534), fontSize: 14),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _updateStatus('completed'),
+                  icon: const Icon(Icons.check_circle_outline_rounded, color: Colors.white),
+                  label: Text(
+                    isHeavyAppliance ? 'Complete Request' : 'Mark as Handed Over',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF16A34A),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    elevation: 0,
+                  ),
+                ),
+              ),
+            ],
+          ),
         );
       }
     } else if (status.toLowerCase() == 'completed') {
