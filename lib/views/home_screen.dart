@@ -44,7 +44,12 @@ class HomeScreen extends StatelessWidget {
           .doc(user.uid)
           .snapshots(),
       builder: (context, snap) {
-        if (!snap.hasData) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (!snap.hasData || !snap.data!.exists) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -68,6 +73,11 @@ class HomeScreen extends StatelessWidget {
                 .doc(user.uid)
                 .snapshots(),
             builder: (ctx, regSnap) {
+              if (regSnap.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
               final active = regSnap.data?.data()?['active'] == true;
               return _buildScaffold(
                   context, user.uid, company, incomplete, active);
@@ -94,6 +104,11 @@ class HomeScreen extends StatelessWidget {
           return FutureBuilder<String>(
             future: futureCompany,
             builder: (ctx, futureSnap) {
+              if (futureSnap.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
               final company = (futureSnap.data ?? '').trim();
               return buildScaffoldWithActiveStream(company);
             },
@@ -118,6 +133,20 @@ class HomeScreen extends StatelessWidget {
     bool incomplete,
     bool isActive,
   ) {
+    if (incomplete) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: _OnboardingGate(),
+      );
+    }
+
+    if (!isActive) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: _WaitingForConfirmationGate(),
+      );
+    }
+
     return WillPopScope(
       onWillPop: () async => false,
       child: Scaffold(
@@ -144,141 +173,135 @@ class HomeScreen extends StatelessWidget {
             ),
           ],
         ),
-        body: incomplete
-            ? const _OnboardingGate()
-            : (!isActive
-                ? const _WaitingForConfirmationGate()
-                : RefreshIndicator(
-                    onRefresh: () async {
-                      // Refresh data
-                      await Future.delayed(const Duration(milliseconds: 500));
-                    },
-                    child: SingleChildScrollView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                      // Greeting Section
-                      Text(
-                        _getGreeting(),
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppColors.secondaryText,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        companyName.isNotEmpty ? companyName : 'Welcome',
-                        style: const TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.icon,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      // Real-time Stats Cards
-                      _StatsGrid(shopUid: uid),
-                      const SizedBox(height: 24),
-
-                      // Quick Actions
-                      Row(
-                        children: [
-                          const Text(
-                            'Quick Actions',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.icon,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _QuickActionsGrid(),
-                      const SizedBox(height: 32),
-
-                      // Earnings Section
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Earnings Overview',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.icon,
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.icon,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: const Text(
-                              'This Month',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      _EarningsSection(shopUid: uid),
-                      const SizedBox(height: 32),
-
-                      // Customer Insights
-                      const Text(
-                        'Customer Insights',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.icon,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      _CustomerInsights(shopUid: uid),
-                      const SizedBox(height: 40),
-                    ],
+        body: RefreshIndicator(
+          onRefresh: () async {
+            // Refresh data
+            await Future.delayed(const Duration(milliseconds: 500));
+          },
+          child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Greeting Section
+                Text(
+                  _getGreeting(),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: AppColors.secondaryText,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              )),
-        bottomNavigationBar: (incomplete || !isActive)
-            ? null
-            : BottomNavWidget(
-                currentIndex: 0,
-                onTap: (int idx) {
-                  switch (idx) {
-                    case 0:
-                      break;
-                    case 1:
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => ServiceRequestsScreen(),
+                const SizedBox(height: 4),
+                Text(
+                  companyName.isNotEmpty ? companyName : 'Welcome',
+                  style: const TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.icon,
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Real-time Stats Cards
+                _StatsGrid(shopUid: uid),
+                const SizedBox(height: 24),
+
+                // Quick Actions
+                Row(
+                  children: [
+                    const Text(
+                      'Quick Actions',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.icon,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _QuickActionsGrid(),
+                const SizedBox(height: 32),
+
+                // Earnings Section
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Earnings Overview',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.icon,
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.icon,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'This Month',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                      break;
-                    case 2:
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const ChatUsersScreen(),
-                        ),
-                      );
-                      break;
-                  }
-                },
-              ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                _EarningsSection(shopUid: uid),
+                const SizedBox(height: 32),
+
+                // Customer Insights
+                const Text(
+                  'Customer Insights',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.icon,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _CustomerInsights(shopUid: uid),
+                const SizedBox(height: 40),
+              ],
+            ),
+          ),
+        ),
+        bottomNavigationBar: BottomNavWidget(
+          currentIndex: 0,
+          onTap: (int idx) {
+            switch (idx) {
+              case 0:
+                break;
+              case 1:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ServiceRequestsScreen(),
+                  ),
+                );
+                break;
+              case 2:
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const ChatUsersScreen(),
+                  ),
+                );
+                break;
+            }
+          },
+        ),
       ),
     );
   }

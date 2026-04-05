@@ -127,6 +127,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.pushNamed(context, AppRoutes.privacyPolicy);
+                    },
+                    child: Text(
+                      "Privacy Policy & Terms",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[600],
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 28),
               ],
             ),

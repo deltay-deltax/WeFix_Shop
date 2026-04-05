@@ -12,4 +12,6 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String nearbyShops = '/nearby-shops';
   static const String shopDetails = '/shop-details';
+  static const String privacyPolicy = '/privacy-policy';
+  static const String termsOfUse = '/terms-of-use';
 }

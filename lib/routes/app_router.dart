@@ -10,6 +10,10 @@ import '../views/add_service_screen.dart';
 import '../views/chat_screen.dart';
 import '../views/profile_screen.dart';
 import '../views/notifications_screen.dart';
+import '../authentication/privacy_and_policy_screen.dart';
+import '../authentication/terms_and_use_1_screen.dart';
+import '../views/public_privacy_policy.dart';
+import '../views/public_terms_of_use.dart';
 
 class AppRouter {
   static Route<dynamic> generate(RouteSettings settings) {
@@ -38,6 +42,10 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => ProfileScreen());
       case AppRoutes.notifications:
         return MaterialPageRoute(builder: (_) => NotificationsScreen());
+      case AppRoutes.privacyPolicy:
+        return MaterialPageRoute(builder: (_) => const PublicPrivacyPolicy());
+      case AppRoutes.termsOfUse:
+        return MaterialPageRoute(builder: (_) => const PublicTermsOfUse());
       default:
         return MaterialPageRoute(
           builder: (_) => const auth_login.LoginScreen(),
