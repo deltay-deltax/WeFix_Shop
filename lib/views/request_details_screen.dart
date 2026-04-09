@@ -268,7 +268,8 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
   Widget _buildContent(Map<String, dynamic> d) {
     final status = (d['status'] ?? 'Pending').toString();
     final images = (d['images'] as List<dynamic>?) ?? [];
-    final problem = (d['problem'] ?? d['description'] ?? 'No description').toString();
+    final problem = (d['problem'] ?? '').toString();
+    final description = (d['description'] ?? '').toString();
     final brand = (d['brand'] ?? '').toString();
     final model = (d['modelName'] ?? '').toString();
     final modelNumber = (d['modelNumber'] ?? '').toString();
@@ -394,7 +395,7 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                 const SizedBox(height: 24),
                 
                 // Problem Description
-                const Text('Problem Description', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Issue Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
                 Container(
                   width: double.infinity,
@@ -404,7 +405,36 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Colors.grey[200]!),
                   ),
-                  child: Text(problem, style: const TextStyle(fontSize: 16)),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (problem.isNotEmpty) ...[
+                        Text(
+                          problem,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        if (description.isNotEmpty) const SizedBox(height: 8),
+                      ],
+                      if (description.isNotEmpty)
+                        Text(
+                          description,
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[800],
+                            height: 1.5,
+                          ),
+                        ),
+                      if (problem.isEmpty && description.isEmpty)
+                        const Text(
+                          'No details provided',
+                          style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                        ),
+                    ],
+                  ),
                 ),
                 
                 // --- SERVICE DETAILS SECTION ---
@@ -1210,7 +1240,7 @@ class _StatusChip extends StatelessWidget {
     Color bg = Colors.grey[200]!;
     Color text = Colors.black87;
 
-    if (s == 'paid' || s == 'completed' || s == 'payment_done') {
+    if (s == 'paid' || s == 'completed' || s == 'payment_done' || s == 'delivered') {
       bg = const Color(0xFFD1FADF);
       text = const Color(0xFF027A48);
     } else if (s == 'pending' || s == 'new') {

@@ -137,7 +137,7 @@ class ChatUsersScreen extends StatelessWidget {
                         builder: (context, userSnap) {
                           final userExists = (userSnap.data?.exists ?? false);
                           final user = userSnap.data?.data();
-                          final userName = user?['Name'];
+                          final userName = user?['Name'] ?? user?['name'] ?? user?['customerName'];
                           final userAvatar = user?['profile'] ?? user?['image'];
 
                           if (userExists && userName != null) {
@@ -169,7 +169,7 @@ class ChatUsersScreen extends StatelessWidget {
                               final shopExists =
                                   (shopSnap.data?.exists ?? false);
                               final shop = shopSnap.data?.data();
-                              final shopName = shop?['companyName'];
+                              final shopName = shop?['companyName'] ?? shop?['shopName'] ?? shop?['name'];
                               final shopAvatar =
                                   shop?['profile'] ?? shop?['image'];
 
@@ -191,18 +191,7 @@ class ChatUsersScreen extends StatelessWidget {
                                 );
                               }
 
-                              final isRead = (d['isRead'] ?? true) as bool;
-                              final lastSenderId = (d['lastMessageSenderId'] ?? '') as String;
-                              final showUnread = !isRead && lastSenderId != myUid;
-
-                              return _buildModernChatTile(
-                                context,
-                                chatId,
-                                'Unknown',
-                                null,
-                                last,
-                                showUnread,
-                              );
+                              return const SizedBox.shrink();
                             },
                           );
                         },

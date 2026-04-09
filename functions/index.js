@@ -153,3 +153,67 @@ exports.onRequestStatusChangedShop = functions.firestore
         functions.logger.log(`Notification saved → shop_users/${shopId}/notifications`);
         return null;
     });
+
+// ── Firestore Trigger: Chat Message → Notification ────────
+exports.onChatMessageReceivedShop = functions.firestore
+    .document("chats/{chatId}/messages/{messageId}")
+    .onCreate(async (snap, context) => {
+        const messageData = snap.data();
+        if (!messageData) return null;
+
+        const senderId = messageData.senderId;
+        const text = messageData.text || (messageData.imageUrl ? "[Image received]" : "New message");
+
+        // Get the chat document
+        const { chatId } = context.params;
+        const chatDoc = await admin.firestore().collection("chats").doc(chatId).get();
+        if (!chatDoc.exists) return null;
+
+        const chatData = chatDoc.data();
+        const participants = chatData.participants || [];
+
+        // Find the recipient(s) (participants EXCLUDING the sender)
+        const recipients = participants.filter(uid => uid !== senderId);
+
+        // We only want to notify the shop owner if they are a recipient
+        for (const recipientId of recipients) {
+            const shopDoc = await admin.firestore().collection("shop_users").doc(recipientId).get();
+            if (shopDoc.exists) {
+                const shopToken = shopDoc.data().fcmToken;
+                if (shopToken) {
+                    try {
+                        let customerName = "Customer";
+                        // try to get sender name from 'users' collection
+                        const userDoc = await admin.firestore().collection("users").doc(senderId).get();
+                        if (userDoc.exists && userDoc.data().Name) {
+                            customerName = userDoc.data().Name;
+                        }
+
+                        await admin.messaging().send({
+                            token: shopToken,
+                            notification: { 
+                                title: `New Message from ${customerName}`, 
+                                body: text 
+                            },
+                            android: {
+                                priority: "high",
+                                notification: {
+                                    sound: "default",
+                                    clickAction: "FLUTTER_NOTIFICATION_CLICK",
+                                },
+                            },
+                            apns: {
+                                payload: { aps: { sound: "default" } },
+                            },
+                            data: { chatId, type: "chat" },
+                        });
+                        functions.logger.log(`Chat push sent to shop ${recipientId}`);
+                    } catch (err) {
+                        functions.logger.error(`Error sending chat push to ${recipientId}:`, err);
+                    }
+                }
+            }
+        }
+
+        return null;
+    });

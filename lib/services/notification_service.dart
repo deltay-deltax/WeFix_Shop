@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
+import '../main.dart';
+import '../core/constants/app_routes.dart';
 
 // Top-level background handler for FCM (must be top-level)
 @pragma('vm:entry-point')
@@ -22,6 +24,9 @@ class NotificationService {
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _fln = FlutterLocalNotificationsPlugin();
+
+  StreamSubscription<QuerySnapshot>? _chatSub;
+  bool _isFirstChatSnapshot = true;
 
   static const AndroidNotificationChannel _channel = AndroidNotificationChannel(
     'high_importance_channel',
@@ -50,7 +55,12 @@ class NotificationService {
     await _fln.initialize(
       settings: initSettings,
       onDidReceiveNotificationResponse: (details) {
-        // Handle local notification taps if needed
+        // App is foregrounded when tapped. Route to Chat (or home)
+        if (details.payload == 'wefix_notification' || details.payload == 'chat') {
+           MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.chat);
+        } else {
+           MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.home);
+        }
       },
     );
 
@@ -74,7 +84,13 @@ class NotificationService {
 
     // 6. App opened from background/terminated by tapping notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      // Handle deep-links/navigation if desired
+      // Handle deep-links/navigation
+      final isChat = message.data['type'] == 'chat' || (message.notification?.title?.toLowerCase().contains('msg') ?? false) || (message.notification?.title?.toLowerCase().contains('message') ?? false);
+      if (isChat) {
+         MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.chat);
+      } else {
+         MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.home);
+      }
     });
 
     // 7. Fetch & register FCM token for this shop user
@@ -93,6 +109,8 @@ class NotificationService {
       if (user != null) {
         final t = await _messaging.getToken();
         if (t != null) await _registerTokenForShopUser(t);
+      } else {
+        _chatSub?.cancel();
       }
     });
   }
