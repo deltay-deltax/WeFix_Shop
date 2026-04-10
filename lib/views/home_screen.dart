@@ -354,7 +354,8 @@ class _StatsGrid extends StatelessWidget {
               inProgressCount++;
             } else if (status == 'completed' ||
                 status == 'paid' ||
-                status == 'payment_done') {
+                status == 'payment_done' ||
+                status == 'delivered') {
               completedCount++;
             }
           }
@@ -577,7 +578,7 @@ class _EarningsSection extends StatelessWidget {
           .collection('shop_users')
           .doc(shopUid)
           .collection('requests')
-          .where('status', whereIn: ['completed', 'paid', 'payment_done'])
+          .where('status', whereIn: ['completed', 'paid', 'payment_done', 'delivered'])
           .snapshots(),
       builder: (context, snapshot) {
         double monthlyEarning = 0.0;
@@ -1229,6 +1230,14 @@ class _AppDrawer extends StatelessWidget {
               onTap: () {
                 Navigator.of(context).pop();
                 Navigator.pushNamed(context, AppRoutes.addService);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.account_balance_wallet_outlined),
+              title: const Text('Ledger / Earnings'),
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.pushNamed(context, AppRoutes.ledger);
               },
             ),
             ListTile(

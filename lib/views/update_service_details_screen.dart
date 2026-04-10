@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:wefix_shop/core/constants/app_colors.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 
 class UpdateServiceDetailsScreen extends StatefulWidget {
   final String requestId;
@@ -30,6 +33,9 @@ class _UpdateServiceDetailsScreenState
   late TextEditingController _warrantyCtrl;
 
   double _totalCost = 0.0;
+  List<String> _imageUrls = [];
+  bool _isUploading = false;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -52,6 +58,7 @@ class _UpdateServiceDetailsScreenState
     _warrantyCtrl = TextEditingController(
       text: details['warranty']?.toString() ?? '',
     );
+    _imageUrls = List<String>.from(details['photos'] ?? []);
 
     _calculateTotal();
 
@@ -77,6 +84,51 @@ class _UpdateServiceDetailsScreenState
     super.dispose();
   }
 
+  Future<void> _pickAndUploadImage() async {
+    if (_imageUrls.length >= 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Maximum 3 photos allowed')),
+      );
+      return;
+    }
+
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 70,
+    );
+
+    if (image == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('service_photos')
+          .child(widget.requestId)
+          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      await ref.putFile(File(image.path));
+      final url = await ref.getDownloadURL();
+
+      setState(() {
+        _imageUrls.add(url);
+        _isUploading = false;
+      });
+    } catch (e) {
+      setState(() => _isUploading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error uploading image: $e')),
+      );
+    }
+  }
+
+  void _removeImage(int index) {
+    setState(() {
+      _imageUrls.removeAt(index);
+    });
+  }
+
   Future<void> _saveDetails({bool markAsCompleted = false}) async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -89,6 +141,7 @@ class _UpdateServiceDetailsScreenState
           'partsCost': double.tryParse(_partsCostCtrl.text) ?? 0.0,
           'totalCost': _totalCost,
           'warranty': _warrantyCtrl.text,
+          'photos': _imageUrls,
           'lastUpdated': DateTime.now().toIso8601String(),
         },
         'updatedAt': FieldValue.serverTimestamp(),
@@ -220,6 +273,70 @@ class _UpdateServiceDetailsScreenState
                 controller: _warrantyCtrl,
                 label: 'Warranty on New Service',
                 hint: 'e.g., 3 months, 1 year',
+              ),
+
+              const SizedBox(height: 24),
+              const Text(
+                'Service Photos (Max 3)',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 100,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _imageUrls.length + (_imageUrls.length < 3 ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _imageUrls.length && _imageUrls.length < 3) {
+                      return GestureDetector(
+                        onTap: _isUploading ? null : _pickAndUploadImage,
+                        child: Container(
+                          width: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[300]!),
+                          ),
+                          child: _isUploading
+                              ? const Center(child: CircularProgressIndicator())
+                              : const Icon(Icons.add_a_photo, color: Colors.grey),
+                        ),
+                      );
+                    }
+
+                    return Stack(
+                      children: [
+                        Container(
+                          width: 100,
+                          margin: const EdgeInsets.only(right: 8),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                            image: DecorationImage(
+                              image: NetworkImage(_imageUrls[index]),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          top: 4,
+                          right: 12,
+                          child: GestureDetector(
+                            onTap: () => _removeImage(index),
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.close, size: 16, color: Colors.white),
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
 
               const SizedBox(height: 40),

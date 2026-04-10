@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/constants/app_colors.dart';
 import '../viewModels/register_view_model.dart';
-// removed email verification flow
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RegisterNewShopScreen extends StatelessWidget {
   static const String routeName = '/register';
@@ -101,19 +101,19 @@ class RegisterNewShopScreen extends StatelessWidget {
                         const SizedBox(height: 12),
                         if (vm.hasGstin)
                           _formField(
-                            'GSTIN',
+                            'GSTIN*',
                             vm.gstinController,
                             hint: 'Enter your GSTIN',
                           ),
                         _formField(
-                          'Company Legal Name',
+                          'Company Legal Name*',
                           vm.companyLegalNameController,
                           hint: 'Enter your company legal name',
                         ),
                         _label('Company Type*'),
                         _companyTypeDropdown(vm),
                         const SizedBox(height: 12),
-                        _label('Shop Photos (max 4)'),
+                        _label('Shop Photos* (max 4)'),
                         // Multi-photo picker with primary
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -160,11 +160,23 @@ class RegisterNewShopScreen extends StatelessWidget {
                                             borderRadius: BorderRadius.circular(
                                               8,
                                             ),
-                                            child: Image.network(
-                                              url,
+                                            child: CachedNetworkImage(
+                                              imageUrl: url,
                                               width: 70,
                                               height: 70,
                                               fit: BoxFit.cover,
+                                              placeholder: (context, url) => Container(
+                                                width: 70,
+                                                height: 70,
+                                                color: Colors.grey[200],
+                                                child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+                                              ),
+                                              errorWidget: (context, url, error) => Container(
+                                                width: 70,
+                                                height: 70,
+                                                color: Colors.grey[200],
+                                                child: const Icon(Icons.broken_image),
+                                              ),
                                             ),
                                           ),
                                           if (vm.primaryPhotoUrl == url)
@@ -198,7 +210,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                         _label('Shop Category'),
                         _shopCategoryDropdown(vm),
                         const SizedBox(height: 8),
-                        _label('Subcategories (select multiple)'),
+                        _label('Subcategories* (select multiple)'),
                         _subcategoriesMulti(vm),
                         const SizedBox(height: 6),
                         _commonRepairsHelper(vm),
@@ -239,8 +251,8 @@ class RegisterNewShopScreen extends StatelessWidget {
                             const SizedBox(height: 12),
                           ],
                         ),
-                        _formField('Address Line 2', vm.address2Controller),
-                        _formField('Landmark', vm.landmarkController),
+                        _formField('Address Line 2*', vm.address2Controller),
+                        _formField('Landmark*', vm.landmarkController),
                         _formField('City*', vm.cityController),
                         _formField('State*', vm.stateController),
                         _formField(
@@ -250,7 +262,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                         ),
                         // Lat/Long fields (editable)
                         _formField(
-                          'Latitude',
+                          'Latitude*',
                           vm.latitudeController,
                           hint: 'e.g. 12.9716',
                           keyboardType: TextInputType.numberWithOptions(
@@ -258,7 +270,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                           ),
                         ),
                         _formField(
-                          'Longitude',
+                          'Longitude*',
                           vm.longitudeController,
                           hint: 'e.g. 77.5946',
                           keyboardType: TextInputType.numberWithOptions(
@@ -266,7 +278,7 @@ class RegisterNewShopScreen extends StatelessWidget {
                           ),
                         ),
 
-                        _label('Shop Description'),
+                        _label('Shop Description*'),
                         _roundedField(
                           controller: vm.shopDescriptionController,
                           hint:
@@ -470,7 +482,7 @@ class RegisterNewShopScreen extends StatelessWidget {
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: value,
-          hint: const Text('Select Shop Category (optional)'),
+          hint: const Text('Select Shop Category'),
           items: items
               .map((e) => DropdownMenuItem(value: e, child: Text(e)))
               .toList(),

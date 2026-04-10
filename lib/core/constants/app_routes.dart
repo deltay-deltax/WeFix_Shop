@@ -14,4 +14,5 @@ class AppRoutes {
   static const String shopDetails = '/shop-details';
   static const String privacyPolicy = '/privacy-policy';
   static const String termsOfUse = '/terms-of-use';
+  static const String ledger = '/ledger';
 }

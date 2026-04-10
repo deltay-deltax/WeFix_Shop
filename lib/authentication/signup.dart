@@ -5,6 +5,7 @@ import '../widgets/auth_input_field.dart';
 import 'terms_and_use_1_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../core/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
@@ -50,7 +51,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 16),
                 Center(
                   child: Text(
-                    'Create Account',
+                    'Shop Registration',
                     style: TextStyle(
                       color: AppColors.accent,
                       fontWeight: FontWeight.bold,
@@ -61,7 +62,7 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 8),
                 const Center(
                   child: Text(
-                    'Create an account so you can explore all the\nexisting jobs',
+                    'Register your shop to start receiving\nservice requests from customers.',
                     style: TextStyle(
                       fontSize: 15.5,
                       fontWeight: FontWeight.w500,
@@ -112,14 +113,14 @@ class _SignupScreenState extends State<SignupScreen> {
                 InputField(
                   hint: 'Password',
                   controller: passCtrl,
-                  obscureText: true,
+                  isPassword: true,
                   fillColor: Colors.white,
                 ),
                 const SizedBox(height: 12),
                 InputField(
                   hint: 'Confirm Password',
                   controller: confirmPassCtrl,
-                  obscureText: true,
+                  isPassword: true,
                   fillColor: Colors.white,
                 ),
                 const SizedBox(height: 24),
@@ -177,11 +178,27 @@ class _SignupScreenState extends State<SignupScreen> {
                                   builder: (_) => const TermsAndUse1Screen(),
                                 ),
                               );
+                            } on FirebaseAuthException catch (e) {
+                              String msg = 'Registration error';
+                              if (e.code == 'email-already-in-use') {
+                                msg = 'This email is already registered.';
+                              } else if (e.code == 'weak-password') {
+                                msg = 'The password is too weak.';
+                              } else if (e.code == 'invalid-email') {
+                                msg = 'The email address is invalid.';
+                              } else if (e.code == 'network-request-failed') {
+                                msg = 'Network error. Please check your connection.';
+                              } else {
+                                msg = e.message ?? 'Sign up failed. Please try again.';
+                              }
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(msg)),
+                              );
                             } catch (e) {
                               if (!mounted) return;
                               ScaffoldMessenger.of(
                                 context,
-                              ).showSnackBar(SnackBar(content: Text('$e')));
+                              ).showSnackBar(SnackBar(content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}')));
                             } finally {
                               if (mounted)
                                 setState(() => _emailLoading = false);
@@ -207,63 +224,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Continue with Google (only)
-                SizedBox(
-                  height: 48,
-                  child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: _emailLoading || _googleLoading
-                        ? null
-                        : () async {
-                            setState(() => _googleLoading = true);
-                            try {
-                              await AuthService.instance.signInWithGoogle(
-                                role: 'shop',
-                              );
-                              if (!mounted) return;
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => const TermsAndUse1Screen(),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!mounted) return;
-                              ScaffoldMessenger.of(
-                                context,
-                              ).showSnackBar(SnackBar(content: Text('$e')));
-                            } finally {
-                              if (mounted)
-                                setState(() => _googleLoading = false);
-                            }
-                          },
-                    child: _googleLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SvgPicture.asset(
-                                'assets/icon/google_g.svg',
-                                width: 20,
-                                height: 20,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Continue with Google',
-                                style: TextStyle(fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                  ),
-                ),
                 const SizedBox(height: 14),
                 Center(
                   child: TextButton(

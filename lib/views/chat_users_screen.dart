@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../core/constants/app_routes.dart';
 import '../core/constants/app_colors.dart';
 import '../widgets/BottomNavWidget.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ChatUsersScreen extends StatelessWidget {
   const ChatUsersScreen({super.key});
@@ -275,7 +276,7 @@ class ChatUsersScreen extends StatelessWidget {
                           radius: 28,
                           backgroundColor: Colors.grey.shade100,
                           backgroundImage: (avatar is String && avatar.isNotEmpty)
-                              ? NetworkImage(avatar)
+                              ? CachedNetworkImageProvider(avatar)
                               : null,
                           child:
                               (avatar == null || (avatar is String && avatar.isEmpty))

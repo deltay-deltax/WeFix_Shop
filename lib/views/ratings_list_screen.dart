@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../core/constants/app_colors.dart';
 import 'package:intl/intl.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class RatingsListScreen extends StatelessWidget {
   const RatingsListScreen({Key? key}) : super(key: key);
@@ -212,7 +213,7 @@ class RatingsListScreen extends StatelessWidget {
                                         radius: 24,
                                         backgroundColor: AppColors.primary.withOpacity(0.1),
                                         backgroundImage: userAvatar != null && userAvatar.toString().isNotEmpty
-                                            ? NetworkImage(userAvatar.toString())
+                                            ? CachedNetworkImageProvider(userAvatar.toString())
                                             : null,
                                         child: userAvatar == null || userAvatar.toString().isEmpty
                                             ? Text(

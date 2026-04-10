@@ -8,7 +8,8 @@ import '../widgets/BottomNavWidget.dart';
 import 'service_requesr-t_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:wefix_shop/widgets/full_screen_image_view.dart';
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
 
@@ -101,7 +102,7 @@ class _ChatScreenState extends State<ChatScreen> {
                           CircleAvatar(
                             backgroundImage:
                                 (headerImage != null && headerImage!.isNotEmpty)
-                                ? NetworkImage(headerImage!)
+                                ? CachedNetworkImageProvider(headerImage!)
                                 : null,
                             backgroundColor: Colors.grey[300],
                             child: (headerImage == null || headerImage!.isEmpty)
@@ -187,9 +188,31 @@ class _ChatScreenState extends State<ChatScreen> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   if (imageUrl != null && imageUrl.isNotEmpty)
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(10),
-                                      child: Image.network(imageUrl),
+                                    GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => FullScreenImageView(imageUrl: imageUrl),
+                                          ),
+                                        );
+                                      },
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(10),
+                                        child: CachedNetworkImage(
+                                          imageUrl: imageUrl,
+                                          placeholder: (context, url) => Container(
+                                            height: 150,
+                                            color: Colors.grey[300],
+                                            child: const Center(child: CircularProgressIndicator()),
+                                          ),
+                                          errorWidget: (context, url, error) => Container(
+                                            height: 150,
+                                            color: Colors.grey[300],
+                                            child: const Icon(Icons.broken_image),
+                                          ),
+                                        ),
+                                      ),
                                     ),
 
                                   if (text.isNotEmpty)

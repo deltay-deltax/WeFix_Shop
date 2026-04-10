@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:wefix_shop/authentication/forgot_password.dart';
 import '../core/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 // REMOVE google_sign_in import, it's not needed here
 import '../core/constants/app_colors.dart';
@@ -49,7 +50,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 100),
                 Center(
                   child: Text(
-                    'Login here',
+                    'Welcome Back',
                     style: TextStyle(
                       color: AppColors.primary,
                       fontWeight: FontWeight.bold,
@@ -60,7 +61,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 10),
                 const Center(
                   child: Text(
-                    "Welcome back, you’ve\nbeen missed!",
+                    "Log in to manage your shop and\nservice requests",
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
@@ -80,7 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 InputField(
                   hint: 'Password',
                   controller: passCtrl,
-                  obscureText: true,
+                  isPassword: true,
                   fillColor: AppColors.inputFill,
                 ),
                 const SizedBox(height: 3),
@@ -191,14 +192,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                   if (!mounted) return;
                   Navigator.of(context).pushReplacementNamed(AppRoutes.home);
-                } on Exception catch (e) {
-                  final msg = e.toString();
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text(msg)));
-                } catch (_) {
+                } on FirebaseAuthException catch (e) {
+                  String msg = 'Authentication error';
+                  if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-credential') {
+                    msg = 'Incorrect email or password.';
+                  } else if (e.code == 'invalid-email') {
+                    msg = 'The email address is badly formatted.';
+                  } else if (e.code == 'user-disabled') {
+                    msg = 'This account has been disabled.';
+                  } else if (e.code == 'network-request-failed') {
+                    msg = 'Network error. Please check your connection.';
+                  } else {
+                    msg = e.message ?? 'Sign in failed. Please try again.';
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Sign in failed')),
+                    SnackBar(content: Text(msg)),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}')),
                   );
                 } finally {
                   if (mounted) {
@@ -241,13 +253,24 @@ class _LoginScreenState extends State<LoginScreen> {
                 setState(() => _googleLoading = true);
                 try {
                   // --- REPLACED ---
-                  await _authService.signInWithGoogle(role: 'shop');
+                  await _authService.signInWithGoogle(
+                    role: 'shop',
+                    requireExisting: true,
+                  );
                   // ---
 
                   if (!mounted) return;
                   Navigator.of(context).pushReplacementNamed(AppRoutes.home);
                 } on Exception catch (e) {
-                  final msg = e.toString();
+                  String msg = e.toString();
+                  if (msg.contains('not_registered')) {
+                    msg = 'No shop account found with this Google email. Please sign up first.';
+                  } else if (msg.contains('google_sign_in_canceled')) {
+                    msg = 'Sign in canceled';
+                  } else if (msg.contains('role_mismatch')) {
+                    msg = 'This account is not registered as a shop.';
+                  }
+
                   ScaffoldMessenger.of(
                     context,
                   ).showSnackBar(SnackBar(content: Text(msg)));

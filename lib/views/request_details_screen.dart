@@ -4,7 +4,8 @@ import 'package:wefix_shop/core/constants/app_colors.dart';
 import 'package:wefix_shop/views/update_service_details_screen.dart';
 import 'package:wefix_shop/services/borzo_service.dart';
 import 'package:url_launcher/url_launcher.dart';
-
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:wefix_shop/widgets/full_screen_image_view.dart';
 class RequestDetailsScreen extends StatefulWidget {
   final String requestId;
   final Map<String, dynamic> requestData;
@@ -313,11 +314,28 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
               child: PageView.builder(
                 itemCount: images.length,
                 itemBuilder: (context, index) {
-                  return Image.network(
-                    images[index].toString(),
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        Container(color: Colors.grey[200], child: const Icon(Icons.broken_image)),
+                  final imageUrl = images[index].toString();
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => FullScreenImageView(imageUrl: imageUrl),
+                        ),
+                      );
+                    },
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.broken_image),
+                      ),
+                    ),
                   );
                 },
               ),
@@ -516,6 +534,42 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                             ],
                           ),
                         ],
+                        if (serviceData['photos'] != null && (serviceData['photos'] as List).isNotEmpty) ...[
+                          const SizedBox(height: 16),
+                          const Text('Service Photos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                          const SizedBox(height: 8),
+                          SizedBox(
+                            height: 80,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: (serviceData['photos'] as List).length,
+                              itemBuilder: (context, index) {
+                                final url = serviceData['photos'][index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => FullScreenImageView(imageUrl: url),
+                                      ),
+                                    );
+                                  },
+                                  child: Container(
+                                    width: 80,
+                                    margin: const EdgeInsets.only(right: 8),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(8),
+                                      image: DecorationImage(
+                                        image: CachedNetworkImageProvider(url),
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -543,7 +597,27 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
                   ),
 
                 const SizedBox(height: 12),
-                _detailRow(Icons.phone, 'Mobile', phone),
+                InkWell(
+                  onTap: () async {
+                    if (phone.isNotEmpty) {
+                      final url = Uri.parse('tel:$phone');
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url);
+                      } else {
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Could not launch dialer')),
+                          );
+                        }
+                      }
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(8),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: _detailRow(Icons.phone, 'Mobile (Tap to Call)', phone),
+                  ),
+                ),
                 const SizedBox(height: 12),
                 _detailRow(Icons.location_on, 'Address', address),
                 if (createdAtStr.isNotEmpty) ...[
@@ -1208,23 +1282,26 @@ class _RequestDetailsScreenState extends State<RequestDetailsScreen> {
     return ts.toString();
   }
 
-  Widget _detailRow(IconData icon, String label, String value) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: 20, color: Colors.grey[600]),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-              const SizedBox(height: 2),
-              Text(value, style: const TextStyle(fontSize: 16)),
-            ],
+  Widget _detailRow(IconData icon, String label, String value, {VoidCallback? onTap}) {
+    return InkWell(
+      onTap: onTap,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 20, color: Colors.grey[600]),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(value, style: const TextStyle(fontSize: 16)),
+              ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

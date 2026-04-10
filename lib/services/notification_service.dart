@@ -56,7 +56,7 @@ class NotificationService {
       settings: initSettings,
       onDidReceiveNotificationResponse: (details) {
         // App is foregrounded when tapped. Route to Chat (or home)
-        if (details.payload == 'wefix_notification' || details.payload == 'chat') {
+        if (details.payload == 'chat' || (details.payload?.contains('chat') ?? false)) {
            MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.chat);
         } else {
            MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.home);
@@ -84,14 +84,17 @@ class NotificationService {
 
     // 6. App opened from background/terminated by tapping notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      // Handle deep-links/navigation
-      final isChat = message.data['type'] == 'chat' || (message.notification?.title?.toLowerCase().contains('msg') ?? false) || (message.notification?.title?.toLowerCase().contains('message') ?? false);
-      if (isChat) {
-         MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.chat);
-      } else {
-         MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.home);
-      }
+      _handleNotificationClick(message);
     });
+
+    // 7. Check if app was opened from a terminated state via notification
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance.getInitialMessage();
+    if (initialMessage != null) {
+      // Delay slightly to ensure navigator is ready
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _handleNotificationClick(initialMessage);
+      });
+    }
 
     // 7. Fetch & register FCM token for this shop user
     final token = await _messaging.getToken();
@@ -203,7 +206,21 @@ class NotificationService {
       title: title,
       body: body,
       notificationDetails: details,
-      payload: 'wefix_notification',
+      payload: (title.toLowerCase().contains('message') || title.toLowerCase().contains('msg')) ? 'chat' : 'wefix_notification',
     );
+  }
+
+  void _handleNotificationClick(RemoteMessage message) {
+    final data = message.data;
+    final isChat = data['type'] == 'chat' || 
+                   data['chatId'] != null ||
+                   (message.notification?.title?.toLowerCase().contains('msg') ?? false) || 
+                   (message.notification?.title?.toLowerCase().contains('message') ?? false);
+
+    if (isChat) {
+      MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.chat);
+    } else {
+      MyApp.navigatorKey.currentState?.pushNamed(AppRoutes.home);
+    }
   }
 }

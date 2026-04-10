@@ -185,8 +185,60 @@ class RegisterViewModel extends ChangeNotifier {
     try {
       submitting = true;
       notifyListeners();
+      if (hasGstin && gstinController.text.trim().isEmpty) {
+        error = 'Please provide your GSTIN.';
+        return;
+      }
+      if (companyLegalNameController.text.trim().isEmpty) {
+        error = 'Please provide your Company Legal Name.';
+        return;
+      }
+      if (selectedCompanyType == null || selectedCompanyType!.isEmpty) {
+        error = 'Please select a Company Type.';
+        return;
+      }
+      if (uploadedPhotos.isEmpty) {
+        error = 'Please upload at least one Shop Photo.';
+        return;
+      }
+      if (shopCategoryController.text.trim().isEmpty) {
+        error = 'Please select a Shop Category.';
+        return;
+      }
+      if (selectedSubcategories.isEmpty) {
+        error = 'Please select at least one Subcategory.';
+        return;
+      }
+      if (address1Controller.text.trim().isEmpty) {
+        error = 'Please provide Address Line 1.';
+        return;
+      }
+      if (cityController.text.trim().isEmpty) {
+        error = 'Please provide your City.';
+        return;
+      }
+      if (stateController.text.trim().isEmpty) {
+        error = 'Please provide your State.';
+        return;
+      }
+      if (pincodeController.text.trim().isEmpty) {
+        error = 'Please provide your Pincode.';
+        return;
+      }
+      if (latitudeController.text.trim().isEmpty || longitudeController.text.trim().isEmpty) {
+        error = 'Please provide Latitude and Longitude (or use "My Location").';
+        return;
+      }
+      if (shopDescriptionController.text.trim().isEmpty) {
+        error = 'Please provide a Shop Description.';
+        return;
+      }
       if (gmapUrlController.text.trim().isEmpty) {
         error = 'Please provide your Shop Google Maps URL.';
+        return;
+      }
+      if (phoneController.text.trim().isEmpty) {
+        error = 'Please provide your Mobile Number.';
         return;
       }
       if (!phoneVerified) {

@@ -14,6 +14,7 @@ import '../authentication/privacy_and_policy_screen.dart';
 import '../authentication/terms_and_use_1_screen.dart';
 import '../views/public_privacy_policy.dart';
 import '../views/public_terms_of_use.dart';
+import '../views/ledger_screen.dart';
 
 class AppRouter {
   static Route<dynamic> generate(RouteSettings settings) {
@@ -46,6 +47,8 @@ class AppRouter {
         return MaterialPageRoute(builder: (_) => const PublicPrivacyPolicy());
       case AppRoutes.termsOfUse:
         return MaterialPageRoute(builder: (_) => const PublicTermsOfUse());
+      case AppRoutes.ledger:
+        return MaterialPageRoute(builder: (_) => const LedgerScreen());
       default:
         return MaterialPageRoute(
           builder: (_) => const auth_login.LoginScreen(),
